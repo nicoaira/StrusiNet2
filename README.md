@@ -50,7 +50,7 @@ The input file should be a CSV containing at least one column with the RNA secon
 To generate embeddings from an RNA dataset:
 
 ```sh
-python strusinet.py --input_csv example_data/sample_rna_sequences.csv --output_csv example_data/sample_rna_sequences_with_embeddings.csv
+python strusinet.py --input_csv example_data/sample_dataset.csv --output_csv example_data/sample_dataset_with_embeddings.csv
 ```
 
 **Arguments**:
@@ -66,7 +66,7 @@ python strusinet.py --input_csv example_data/sample_rna_sequences.csv --output_c
 If your CSV doesn't have a header and the secondary structure is in the 6th column:
 
 ```sh
-python strusinet.py --input_csv example_data/sample_rna_sequences_no_header.csv --output_csv example_data/sample_rna_sequences_with_embeddings.csv --structure_column_num 6 --header False --device cuda
+python strusinet.py --input_csv example_data/sample_dataset.csv --output_csv example_data/sample_dataset_with_embeddings.csv --structure_column_num 6 --header False --device cuda
 ```
 
 ## Running the Tests
