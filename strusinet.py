@@ -41,7 +41,7 @@ def get_embedding(contact_matrix, model, device='cpu'):
     
     with torch.no_grad():
         embedding = model.forward_once(contact_tensor)
-    return embedding.cpu().numpy()
+    return embedding.cpu().numpy().tolist()
 
 # Function to validate dot-bracket structure
 def validate_structure(structure):
@@ -51,18 +51,21 @@ def validate_structure(structure):
     if not all(char in valid_characters for char in structure):
         raise ValueError(f"Invalid characters found in the column used for secondary structure: '{structure}'. Valid characters are: {valid_characters}")
 
-# Main function to generate embeddings from CSV
-def generate_embeddings(input_csv, output_csv, model_path, structure_column_name='secondary_structure', structure_column_num=None, max_len=641, device='cpu', header=True):
+# Main function to generate embeddings from CSV or TSV
+def generate_embeddings(input, output, model_path, structure_column_name='secondary_structure', structure_column_num=None, max_len=641, device='cpu', header=True):
     # Load the trained model
     model = load_trained_model(model_path, device=device)
     
+    # Determine delimiter based on file extension
+    delimiter = '\t' if input.endswith('.tsv') else ','
+    
     # Load the input CSV based on whether there is a header or not
     if header:
-        df = pd.read_csv(input_csv)
+        df = pd.read_csv(input, delimiter=delimiter)
     else:
         if structure_column_num is None:
             raise ValueError("When header is False, structure_column_num must be specified.")
-        df = pd.read_csv(input_csv, header=None)
+        df = pd.read_csv(input, delimiter=delimiter, header=None)
         structure_column = df.columns[structure_column_num]
     
     # Determine which column to use for structure
@@ -85,19 +88,19 @@ def generate_embeddings(input_csv, output_csv, model_path, structure_column_name
             contact_matrix = pad_and_convert_to_contact_matrix(structure, max_len)
             # Get the embedding using the neural network
             embedding = get_embedding(contact_matrix, model, device=device)
-            embeddings.append(embedding)
+            embeddings.append(','.join(map(str, embedding)))  # Convert list to comma-separated string
 
     # Add the embeddings to the DataFrame
     df['embedding_vector'] = embeddings
     
-    # Save the output CSV
-    df.to_csv(output_csv, index=False)
-    print(f"Embeddings saved to {output_csv}")
+    # Save the output TSV
+    df.to_csv(output, sep='\t', index=False)
+    print(f"Embeddings saved to {output}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate embeddings from RNA secondary structures using a trained Siamese model.")
-    parser.add_argument('--input_csv', type=str, required=True, help='Path to the input CSV file containing RNA secondary structures.')
-    parser.add_argument('--output_csv', type=str, required=True, help='Path to save the output CSV file with embeddings.')
+    parser.add_argument('--input', type=str, required=True, help='Path to the input CSV/TSV file containing RNA secondary structures.')
+    parser.add_argument('--output', type=str, required=True, help='Path to save the output TSV file with embeddings.')
     parser.add_argument('--structure_column_name', type=str, help='Name of the column with the RNA secondary structures.')
     parser.add_argument('--structure_column_num', type=int, help='Column number of the RNA secondary structures (0-indexed). If both column name and number are provided, column number will be ignored.')
     parser.add_argument('--model_path', type=str, default='saved_model/ResNet-Secondary.pth', help='Path to the trained model file (default: saved_model/ResNet-Secondary.pth).')
@@ -112,8 +115,8 @@ if __name__ == "__main__":
 
     # Generate embeddings
     generate_embeddings(
-        args.input_csv, 
-        args.output_csv, 
+        args.input, 
+        args.output, 
         args.model_path, 
         structure_column_name=args.structure_column_name, 
         structure_column_num=args.structure_column_num, 
