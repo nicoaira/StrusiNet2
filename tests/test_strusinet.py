@@ -27,13 +27,12 @@ class TestStrusiNet(unittest.TestCase):
         # Ensure the script ran without errors
         self.assertEqual(result.returncode, 0, f"Script failed with error: {result.stderr}")
 
-        # Check that the output CSV exists
-        self.assertTrue(os.path.exists(self.output), "Output CSV file was not created.")
+        # Check that the output TSV exists
+        self.assertTrue(os.path.exists(self.output), "Output TSV file was not created.")
         
-        # Load the output CSV and check for 'embedding_vector' column
-        df = pd.read_csv(self.output)
-        self.assertIn('embedding_vector', df.columns, "Output CSV does not contain 'embedding_vector' column.")
-
+        # Load the output TSV and check for 'embedding_vector' column
+        df = pd.read_csv(self.output, sep='\t')
+        self.assertIn('embedding_vector', df.columns, "Output TSV does not contain 'embedding_vector' column.")
     def tearDown(self):
         # Clean up generated output file
         if os.path.exists(self.output):
