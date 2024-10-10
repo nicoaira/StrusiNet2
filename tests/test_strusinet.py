@@ -6,14 +6,14 @@ import unittest
 class TestStrusiNet(unittest.TestCase):
     def setUp(self):
         # Setup paths
-        self.input_csv = '../example_data/sample_dataset.csv'
-        self.output_csv = '../example_data/sample_dataset_with_embeddings.csv'
-        self.model_path = '../saved_model/ResNet-Secondary.pth'
+        self.input_csv = 'example_data/sample_dataset.csv'
+        self.output_csv = 'example_data/sample_dataset_with_embeddings.csv'
+        self.model_path = 'saved_model/ResNet-Secondary.pth'
     
     def test_generate_embeddings(self):
         # Run the strusinet script using subprocess
         command = [
-            'python', '../strusinet.py',
+            'python', 'strusinet.py',
             '--input_csv', self.input_csv,
             '--output_csv', self.output_csv,
             '--structure_column_num', '6',  # Since we know secondary structure is in column 6

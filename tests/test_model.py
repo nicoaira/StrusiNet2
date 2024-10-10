@@ -36,7 +36,7 @@ class TestSiameseModel(unittest.TestCase):
             embedding = self.model.forward_once(contact_tensor)
             
         # Ensure the output is of expected shape (256,)
-        self.assertEqual(embedding.shape, torch.Size([1, 256]))
+        self.assertEqual(embedding.shape, torch.Size([1, self.hidden_dim]))
 
 
 if __name__ == '__main__':
