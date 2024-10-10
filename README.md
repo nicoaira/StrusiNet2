@@ -1,6 +1,3 @@
-# README.md
-
-```
 # StrusiNet2: RNA Structure Embedding Generator
 
 ## Introduction
@@ -9,23 +6,7 @@ StrusiNet2 is a tool designed to generate embeddings from RNA secondary structur
 ## Repository Structure
 The repository contains the following key components:
 
-```
-├── Dockerfile
-├── example_data
-│   └── sample_rna_sequences.csv
-├── README.md
-├── saved_model
-│   └── ResNet-Secondary.pth
-├── src
-│   ├── main.py
-│   ├── model
-│   │   ├── siamese_model.py
-│   │   └── utils.py
-│   └── tsne
-│       └── compute_tsne.py
-└── tests
-    └── test_model.py
-```
+
 
 - **`src/model/siamese_model.py`**: Contains the Siamese neural network definition.
 - **`src/model/utils.py`**: Utility functions for processing RNA data.
@@ -63,13 +44,13 @@ wget -O saved_model/ResNet-Secondary.pth "https://drive.google.com/uc?export=dow
 StrusiNet2 can generate embeddings from RNA sequences stored in a CSV file.
 
 ### Input Format
-The input file should be a CSV containing the RNA sequences with the secondary structure in dot-bracket notation. The CSV should have a header row, with one of the columns containing the secondary structure.
+The input file should be a CSV containing at least one column with the RNA secondary structure in dot-bracket notation.
 
 ### Running the Embedding Generation Script
 To generate embeddings from an RNA dataset:
 
 ```sh
-python strusinet.py --input_csv example_data/sample_rna_sequences.csv --output_csv example_data/sample_rna_sequences_with_embeddings.csv --structure_column_name secondary_structure --device cuda
+python strusinet.py --input_csv example_data/sample_rna_sequences.csv --output_csv example_data/sample_rna_sequences_with_embeddings.csv
 ```
 
 **Arguments**:
@@ -100,13 +81,3 @@ This will run both the unit tests for the model and the integration tests for th
 ## Important Notes
 - Ensure you have the correct PyTorch version installed that supports your GPU if you're using CUDA.
 - If you encounter any issues with the pre-trained model, please make sure to check the Google Drive link and download it correctly.
-
-## License
-This project is licensed under the MIT License. Feel free to use and modify it as needed.
-
-## Acknowledgements
-- **PyTorch** for the deep learning framework.
-- **RNAcentral** for providing RNA sequence data.
-
-If you have any questions or run into any issues, feel free to open an issue on the GitHub repository.
-```
