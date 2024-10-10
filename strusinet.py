@@ -41,7 +41,9 @@ def get_embedding(contact_matrix, model, device='cpu'):
     
     with torch.no_grad():
         embedding = model.forward_once(contact_tensor)
-    return embedding.cpu().numpy().tolist()
+    return ','.join(f'{x:.6f}' for x in embedding.cpu().numpy().flatten())
+
+
 
 # Function to validate dot-bracket structure
 def validate_structure(structure):
@@ -88,7 +90,7 @@ def generate_embeddings(input, output, model_path, structure_column_name='second
             contact_matrix = pad_and_convert_to_contact_matrix(structure, max_len)
             # Get the embedding using the neural network
             embedding = get_embedding(contact_matrix, model, device=device)
-            embeddings.append(','.join(map(str, embedding)))  # Convert list to comma-separated string
+            embeddings.append(embedding)  # Convert list to comma-separated string
 
     # Add the embeddings to the DataFrame
     df['embedding_vector'] = embeddings
