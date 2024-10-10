@@ -6,11 +6,10 @@ StrusiNet2 is a tool designed to generate embeddings from RNA secondary structur
 ## Repository Structure
 The repository contains the following key components:
 
-
-
 - **`src/model/siamese_model.py`**: Contains the Siamese neural network definition.
 - **`src/model/utils.py`**: Utility functions for processing RNA data.
 - **`strusinet.py`**: Main script for generating embeddings from RNA secondary structures.
+- **`tsne_embedding_tool.py`**: A script to visualize generated embeddings using t-SNE.
 - **`tests/test_model.py`** and **`tests/test_strusinet.py`**: Unit tests for ensuring the model and the whole embedding generation process work correctly.
 
 ## Installation
@@ -28,6 +27,16 @@ You can install all necessary dependencies using:
 ```sh
 pip install -r requirements.txt
 ```
+
+Dependencies include:
+- `torch==1.12.0`
+- `pandas==1.4.3`
+- `torchvision==0.13.0`
+- `numpy==1.23.1`
+- `scikit-learn==1.1.1`
+- `argparse==1.4.0`
+
+Ensure that the versions match those in the `requirements.txt` file&#8203;:contentReference[oaicite:0]{index=0}.
 
 Make sure you also have [Git LFS](https://git-lfs.github.com/) installed if you need to store large models.
 
@@ -68,6 +77,27 @@ If your CSV doesn't have a header and the secondary structure is in the 6th colu
 ```sh
 python strusinet.py --input_csv example_data/sample_dataset.csv --output_csv example_data/sample_dataset_with_embeddings.csv --structure_column_num 6 --header False --device cuda
 ```
+
+## Running the t-SNE Embedding Tool
+After generating the RNA embeddings, you can use the `tsne_embedding_tool.py` script to visualize the embeddings using t-SNE.
+
+### Example Command
+```sh
+python tsne_embedding_tool.py --input example_data/sample_dataset_with_embeddings.tsv --output example_data/sample_dataset_with_tsne.tsv --embedding_column_name embedding_vector --n_components 3
+```
+
+**Arguments**:
+- `--input`: Path to the input TSV file containing embeddings (e.g., `example_data/sample_dataset_with_embeddings.tsv`).
+- `--output`: Path to save the output TSV file containing the t-SNE-transformed embeddings.
+- `--embedding_column_name`: The name of the column containing the embedding vectors.
+- `--n_components`: Number of components for t-SNE (e.g., 2 for 2D visualization, 3 for 3D visualization).
+
+### Explanation
+- The script reads the specified `embedding_column_name` from the input file and performs t-SNE transformation with the specified number of components.
+- The resulting transformed embeddings are saved to the output file, which can then be used for downstream visualization and analysis.
+
+### Interactive Visualization with Dash
+We have also developed an application using Dash to visualize the t-SNE embeddings interactively. You can find the app in the following repository: [https://github.com/nicoaira/embeddings_app](https://github.com/nicoaira/embeddings_app).
 
 ## Running the Tests
 You can run the tests using:
