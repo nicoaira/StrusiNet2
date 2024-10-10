@@ -1,5 +1,6 @@
 import argparse
 import pandas as pd
+import numpy as np  # Import NumPy to use arrays
 from sklearn.manifold import TSNE
 
 # Function to compute tSNE embeddings and save them to a TSV
@@ -16,6 +17,9 @@ def compute_tsne(input_file, output_file, embedding_column_name='embedding_vecto
 
     # Extract the embeddings as lists of floats
     embeddings = df[embedding_column_name].apply(lambda x: list(map(float, x.split(',')))).tolist()
+
+    # Convert the list of embeddings to a NumPy array
+    embeddings = np.array(embeddings)
 
     # Compute tSNE embeddings
     tsne = TSNE(n_components=n_components, random_state=random_state)
