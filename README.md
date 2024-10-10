@@ -1,58 +1,112 @@
+# README.md
 
-# StrusiNet2
+```
+# StrusiNet2: RNA Structure Embedding Generator
 
-StrusiNet2 is a neural network-based tool for RNA secondary structure analysis. It allows users to generate embedding vectors from RNA sequences given in dot-bracket notation and perform t-SNE visualization for clustering. This package includes both the model-based embedding generator and a tool for t-SNE analysis.
+## Introduction
+StrusiNet2 is a tool designed to generate embeddings from RNA secondary structures using a pre-trained Siamese Neural Network model. This project takes RNA sequences with their secondary structure in dot-bracket notation, processes them into contact matrices, and then feeds them into a neural network to obtain meaningful embeddings. These embeddings can be used for downstream tasks such as clustering, classification, or other forms of analysis.
 
-## Features
-- Generate embedding vectors for RNA structures in dot-bracket notation.
-- Compute t-SNE projections from embedding vectors for visualizing relationships between different RNA sequences.
+## Repository Structure
+The repository contains the following key components:
+
+```
+├── Dockerfile
+├── example_data
+│   └── sample_rna_sequences.csv
+├── README.md
+├── saved_model
+│   └── ResNet-Secondary.pth
+├── src
+│   ├── main.py
+│   ├── model
+│   │   ├── siamese_model.py
+│   │   └── utils.py
+│   └── tsne
+│       └── compute_tsne.py
+└── tests
+    └── test_model.py
+```
+
+- **`src/model/siamese_model.py`**: Contains the Siamese neural network definition.
+- **`src/model/utils.py`**: Utility functions for processing RNA data.
+- **`strusinet.py`**: Main script for generating embeddings from RNA secondary structures.
+- **`tests/test_model.py`** and **`tests/test_strusinet.py`**: Unit tests for ensuring the model and the whole embedding generation process work correctly.
 
 ## Installation
+To run the StrusiNet2 project, you will need Python and the required dependencies installed.
 
-To use StrusiNet2, you need to have Docker installed. Follow the instructions below to build the Docker container and run the tools.
-
-### Clone the Repository
-First, clone this repository to your local machine:
+### Step 1: Clone the Repository
 ```sh
-$ git clone https://github.com/your_username/StrusiNet2.git
-$ cd StrusiNet2
+git clone https://github.com/nicoaira/StrusiNet2.git
+cd StrusiNet2
 ```
 
-### Build Docker Container
-Use the provided `Dockerfile` to build the container:
+### Step 2: Install Dependencies
+You can install all necessary dependencies using:
+
 ```sh
-$ docker build -t strusinet2 .
+pip install -r requirements.txt
 ```
 
-### Run the Container
-To run the container, use the following command:
+Make sure you also have [Git LFS](https://git-lfs.github.com/) installed if you need to store large models.
+
+### Step 3: Download Pre-trained Model
+The pre-trained model file (`ResNet-Secondary.pth`) is not included in this repository due to its size. Please download it using the command below:
+
 ```sh
-$ docker run --rm -v $(pwd):/app strusinet2 --dot_bracket "((..))((..))" --model_path saved_model/siamese_trained_model.pth
+# Download the model from Google Drive and save it in the 'saved_model' directory
+mkdir -p saved_model
+wget -O saved_model/ResNet-Secondary.pth "https://drive.google.com/uc?export=download&id=1ltrAQ2OfmvrRx8cKxeNKK_oebwVRClEW"
 ```
 
-- **`--dot_bracket`**: Provide the RNA structure in dot-bracket notation.
-- **`--model_path`**: Path to the saved model file.
-- **`--max_len`**: (Optional) The maximum length for padding the contact matrix. Defaults to 600.
-- **`--device`**: (Optional) Choose the device (`cpu` or `cuda`). Defaults to `cpu`.
+## Usage
+StrusiNet2 can generate embeddings from RNA sequences stored in a CSV file.
 
-### Running t-SNE Tool
-StrusiNet2 also provides a tool to perform t-SNE analysis on precomputed embedding vectors. You can run this tool using the following command inside the container:
+### Input Format
+The input file should be a CSV containing the RNA sequences with the secondary structure in dot-bracket notation. The CSV should have a header row, with one of the columns containing the secondary structure.
+
+### Running the Embedding Generation Script
+To generate embeddings from an RNA dataset:
 
 ```sh
-$ docker run --rm -v $(pwd):/app strusinet2 python src/tsne/compute_tsne.py --input_csv example_data/sample_embeddings.csv --output_csv output_tsne.csv --embedding_columns embedding_1 embedding_2 embedding_3 --rna_id_column rna_id
+python strusinet.py --input_csv example_data/sample_rna_sequences.csv --output_csv example_data/sample_rna_sequences_with_embeddings.csv --structure_column_name secondary_structure --device cuda
 ```
 
-- **`--input_csv`**: Path to the input CSV file containing embeddings.
-- **`--output_csv`**: Path to save the output CSV file with t-SNE coordinates.
-- **`--embedding_columns`**: Names of the columns containing the embedding vectors.
-- **`--rna_id_column`**: Column to identify rows (e.g., RNA ID).
+**Arguments**:
+- `--input_csv`: Path to the input CSV file containing RNA secondary structures.
+- `--output_csv`: Path to save the output CSV file with embeddings.
+- `--structure_column_name`: The column name containing RNA secondary structures (default: 'secondary_structure').
+- `--structure_column_num`: (Optional) Column number of RNA secondary structures (0-indexed). If both column name and number are provided, column number will be ignored.
+- `--model_path`: Path to the trained model file (default: `saved_model/ResNet-Secondary.pth`).
+- `--device`: Device to run the model on (`cpu` or `cuda`, default: `cpu`).
+- `--header`: Specify whether the input CSV has a header row (`True` or `False`, default: `True`).
 
-### Example Data
-Example RNA sequences and precomputed embeddings are provided in the `example_data/` directory for testing purposes.
-
-## Development and Testing
-This package includes unit tests located in the `tests/` directory. To run the tests, you can execute the following command inside the Docker container:
+### Example Command
+If your CSV doesn't have a header and the secondary structure is in the 6th column:
 
 ```sh
-$ docker run --rm strusinet2 python -m unittest discover tests
+python strusinet.py --input_csv example_data/sample_rna_sequences_no_header.csv --output_csv example_data/sample_rna_sequences_with_embeddings.csv --structure_column_num 6 --header False --device cuda
+```
+
+## Running the Tests
+You can run the tests using:
+
+```sh
+python -m unittest discover tests
+```
+
+This will run both the unit tests for the model and the integration tests for the embedding generation pipeline.
+
+## Important Notes
+- Ensure you have the correct PyTorch version installed that supports your GPU if you're using CUDA.
+- If you encounter any issues with the pre-trained model, please make sure to check the Google Drive link and download it correctly.
+
+## License
+This project is licensed under the MIT License. Feel free to use and modify it as needed.
+
+## Acknowledgements
+- **PyTorch** for the deep learning framework.
+- **RNAcentral** for providing RNA sequence data.
+
+If you have any questions or run into any issues, feel free to open an issue on the GitHub repository.
 ```
