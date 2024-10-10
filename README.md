@@ -21,24 +21,38 @@ git clone https://github.com/nicoaira/StrusiNet2.git
 cd StrusiNet2
 ```
 
-### Step 2: Install Dependencies
-You can install all necessary dependencies using:
+### Step 2: Set Up the Environment and Install Dependencies
+
+It is recommended to use a ```conda``` environment to manage dependencies and ensure compatibility. Follow these steps to create a new ```conda``` environment with Python 3.12.7 and install the necessary dependencies.
+
+#### 1. Create a new conda environment:
+
+```sh
+conda create --name strusi_env python=3.12.7
+```
+#### 2. Activate the conda environment:
+
+```sh
+conda activate strusi_env
+```
+
+#### 2. Install the dependencies
+With the environment activated, install all necessary dependencies using:
 
 ```sh
 pip install -r requirements.txt
 ```
 
 Dependencies include:
-- `torch==1.12.0`
-- `pandas==1.4.3`
-- `torchvision==0.13.0`
-- `numpy==1.23.1`
-- `scikit-learn==1.1.1`
+- `torch==2.4.1`
+- `torchvision==0.19.1`
+- `pandas==2.2.3`
+- `numpy==2.1.2`
+- `scikit-learn==1.5.2`
 - `argparse==1.4.0`
+- `tqdm==4.66.5`
 
-Ensure that the versions match those in the `requirements.txt` file&#8203;:contentReference[oaicite:0]{index=0}.
-
-Make sure you also have [Git LFS](https://git-lfs.github.com/) installed if you need to store large models.
+Ensure that the versions match those in the `requirements.txt` 
 
 ### Step 3: Download Pre-trained Model
 The pre-trained model file (`ResNet-Secondary.pth`) is not included in this repository due to its size. Please download it using the command below:
