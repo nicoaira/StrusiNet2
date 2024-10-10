@@ -73,12 +73,12 @@ The input file should be a CSV containing at least one column with the RNA secon
 To generate embeddings from an RNA dataset:
 
 ```sh
-python strusinet.py --input_csv example_data/sample_dataset.csv --output_csv example_data/sample_dataset_with_embeddings.csv
+python strusinet.py --input example_data/sample_dataset.csv --output example_data/sample_dataset_with_embeddings.tsv
 ```
 
 **Arguments**:
-- `--input_csv`: Path to the input CSV file containing RNA secondary structures.
-- `--output_csv`: Path to save the output CSV file with embeddings.
+- `--input`: Path to the input CSV/TSV file containing RNA secondary structures.
+- `--output`: Path to save the output TSV file with embeddings.
 - `--structure_column_name`: The column name containing RNA secondary structures (default: 'secondary_structure').
 - `--structure_column_num`: (Optional) Column number of RNA secondary structures (0-indexed). If both column name and number are provided, column number will be ignored.
 - `--model_path`: Path to the trained model file (default: `saved_model/ResNet-Secondary.pth`).
@@ -89,15 +89,15 @@ python strusinet.py --input_csv example_data/sample_dataset.csv --output_csv exa
 If your CSV doesn't have a header and the secondary structure is in the 6th column:
 
 ```sh
-python strusinet.py --input_csv example_data/sample_dataset.csv --output_csv example_data/sample_dataset_with_embeddings.csv --structure_column_num 6 --header False --device cuda
+python strusinet.py --input example_data/sample_dataset.csv --output example_data/sample_dataset_with_embeddings.tsv --structure_column_num 6 --header False --device cuda
 ```
 
 ## Running the t-SNE Embedding Tool
-After generating the RNA embeddings, you can use the `tsne_embedding_tool.py` script to visualize the embeddings using t-SNE.
+After generating the RNA embeddings, you can use the `compute_tsne.py` script to visualize the embeddings using t-SNE.
 
 ### Example Command
 ```sh
-python tsne_embedding_tool.py --input example_data/sample_dataset_with_embeddings.tsv --output example_data/sample_dataset_with_tsne.tsv --embedding_column_name embedding_vector --n_components 3
+python compute_tsne.py --input example_data/sample_dataset_with_embeddings.tsv --output example_data/sample_dataset_with_tsne.tsv --embedding_column_name embedding_vector --n_components 3
 ```
 
 **Arguments**:
