@@ -3,3 +3,4 @@ sampled_rfam_with_embeddings.csv
 sampled_rfam_no_header.csv
 test/__pycache__
 example_data/*
+src/model/__pycache__
