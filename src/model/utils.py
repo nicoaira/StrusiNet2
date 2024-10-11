@@ -47,7 +47,10 @@ def pad_and_convert_to_contact_matrix(db_structure, max_len, padding_value='.'):
     contact_matrix = np.zeros((max_len, max_len), dtype=int)
 
     # Dictionary to hold the stack for each pairing symbol
-    look_for = [('(', ')'), ('[', ']'), ('{', '}'), ('<', '>'), ('A', 'a')]
+    look_for = [('(', ')'), ('[', ']'), ('{', '}'),
+                 ('<', '>'), ('A', 'a'), ('B', 'b'),
+                 ('C', 'c'), ('D', 'd')]
+    
     stacks = {pair[0]: [] for pair in look_for}
 
     # Step 3: Fill the contact matrix by iterating over the padded structure

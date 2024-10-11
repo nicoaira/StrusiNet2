@@ -52,7 +52,7 @@ def get_embedding(contact_matrix, model, device='cpu'):
 def validate_structure(structure):
     if not isinstance(structure, str):
         raise ValueError("The secondary structure must be a string containing valid characters for dot-bracket notation.")
-    valid_characters = "()[]{}<>Aa."
+    valid_characters = "()[]{}<>AaBbCcDd."
     if not all(char in valid_characters for char in structure):
         raise ValueError(f"Invalid characters found in the column used for secondary structure: '{structure}'. Valid characters are: {valid_characters}")
 
@@ -75,10 +75,13 @@ def generate_embeddings(input, output, model_path, structure_column_name='second
     
     # Determine which column to use for structure
     if header:
-        if structure_column_num is not None and not args.structure_column_name:
+        if args.structure_column_name:
+            structure_column = structure_column_name
+        elif structure_column_num is not None and not args.structure_column_name :
             structure_column = df.columns[structure_column_num]
         else:
-            structure_column = structure_column_name
+            # default value = secondary_structure
+            structure_column = "secondary_structure"
     
     # Initialize list for storing embeddings
     embeddings = []
