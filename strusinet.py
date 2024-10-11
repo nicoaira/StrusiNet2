@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import torch
 import pandas as pd
 from tqdm import tqdm
@@ -7,6 +9,7 @@ from src.model.utils import pad_and_convert_to_contact_matrix
 import re
 import os
 import subprocess
+from pathlib import Path
 
 # Load the trained model
 def load_trained_model(model_path, input_channels=1, hidden_dim=256, lstm_layers=1, device='cpu'):
@@ -105,7 +108,12 @@ if __name__ == "__main__":
     parser.add_argument('--output', type=str, required=True, help='Path to save the output TSV file with embeddings.')
     parser.add_argument('--structure_column_name', type=str, help='Name of the column with the RNA secondary structures.')
     parser.add_argument('--structure_column_num', type=int, help='Column number of the RNA secondary structures (0-indexed). If both column name and number are provided, column number will be ignored.')
-    parser.add_argument('--model_path', type=str, default='saved_model/ResNet-Secondary.pth', help='Path to the trained model file (default: saved_model/ResNet-Secondary.pth).')
+
+    # Allows the default model_path to be dynamic
+    script_directory = Path(__file__).resolve().parent
+    default_model_path = script_directory / 'saved_model' / 'ResNet-Secondary.pth'
+    parser.add_argument('--model_path', type=str, default=str(default_model_path), help=f'Path to the trained model file (default: {default_model_path}).')
+
     parser.add_argument('--device', type=str, default='cpu', help='Device to run the model on (e.g., "cpu" or "cuda").')
     parser.add_argument('--header', type=str, default='True', help='Specify whether the input CSV file has a header (default: True). Use "True" or "False".')
     args = parser.parse_args()
