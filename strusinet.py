@@ -6,7 +6,7 @@ from tqdm import tqdm
 import argparse
 from src.model.siamese_model import SiameseResNetLSTM
 from src.model.GINModel import GINModel
-from src.model.utils import pad_and_convert_to_contact_matrix, dotbracket_to_graph, graph_to_tensor
+from utils import pad_and_convert_to_contact_matrix, dotbracket_to_graph, graph_to_tensor
 import re
 import os
 import subprocess
