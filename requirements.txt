@@ -1,5 +1,6 @@
 torch==2.4.1
 torchvision==0.19.1
+torch-geometric==2.6.1
 pandas==2.2.3
 numpy==2.1.2
 scikit-learn==1.5.2

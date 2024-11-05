@@ -5,7 +5,7 @@ import pandas as pd
 from tqdm import tqdm
 import argparse
 from src.model.siamese_model import SiameseResNetLSTM
-from src.model.utils import pad_and_convert_to_contact_matrix
+from src.model.utils import pad_and_convert_to_contact_matrix, dotbracket_to_graph, graph_to_tensor
 import re
 import os
 import subprocess
@@ -39,11 +39,20 @@ def load_trained_model(model_path, input_channels=1, hidden_dim=256, lstm_layers
     return model
 
 # Function to get embedding from contact matrix
-def get_embedding(contact_matrix, model, device='cpu'):
+def get_siamese_embedding(contact_matrix, model, device='cpu'):
     contact_tensor = torch.tensor(contact_matrix, dtype=torch.float32).unsqueeze(0).unsqueeze(0).to(device)  # Shape: (1, 1, max_len, max_len)
     
     with torch.no_grad():
         embedding = model.forward_once(contact_tensor)
+    return ','.join(f'{x:.6f}' for x in embedding.cpu().numpy().flatten())
+
+# Function to get embedding from graph
+def get_gin_embedding(graph, model):
+    tg = graph_to_tensor(graph)
+    
+    model.eval()
+    with torch.no_grad():
+        embedding = model(tg)
     return ','.join(f'{x:.6f}' for x in embedding.cpu().numpy().flatten())
 
 
@@ -57,7 +66,7 @@ def validate_structure(structure):
         raise ValueError(f"Invalid characters found in the column used for secondary structure: '{structure}'. Valid characters are: {valid_characters}")
 
 # Main function to generate embeddings from CSV or TSV
-def generate_embeddings(input, output, model_path, structure_column_name='secondary_structure', structure_column_num=None, max_len=641, device='cpu', header=True):
+def generate_embeddings(input, output, model_type, model_path, structure_column_name='secondary_structure', structure_column_num=None, max_len=641, device='cpu', header=True):
     # Load the trained model
     model = load_trained_model(model_path, device=device)
     
@@ -92,10 +101,15 @@ def generate_embeddings(input, output, model_path, structure_column_name='second
             structure = row[structure_column]
             # Validate the dot-bracket structure
             validate_structure(structure)
-            # Convert dot-bracket structure to contact matrix
-            contact_matrix = pad_and_convert_to_contact_matrix(structure, max_len)
-            # Get the embedding using the neural network
-            embedding = get_embedding(contact_matrix, model, device=device)
+            if model_type == "siamese":
+                # Convert dot-bracket structure to contact matrix
+                contact_matrix = pad_and_convert_to_contact_matrix(structure, max_len)
+                # Get the embedding using the neural network
+                embedding = get_siamese_embedding(contact_matrix, model, device=device)
+            elif model_type == "gin":
+                graph = dotbracket_to_graph(structure)
+                embedding = get_gin_embedding(graph, model)
+
             embeddings.append(embedding)  # Convert list to comma-separated string
 
     # Add the embeddings to the DataFrame
@@ -116,6 +130,8 @@ if __name__ == "__main__":
     script_directory = Path(__file__).resolve().parent
     default_model_path = script_directory / 'saved_model' / 'ResNet-Secondary.pth'
     parser.add_argument('--model_path', type=str, default=str(default_model_path), help=f'Path to the trained model file (default: {default_model_path}).')
+    
+    parser.add_argument('--model_type', type=str, default='siamese', help='Model type to run (e.g., "siamese" or "gin").')
 
     parser.add_argument('--device', type=str, default='cpu', help='Device to run the model on (e.g., "cpu" or "cuda").')
     parser.add_argument('--header', type=str, default='True', help='Specify whether the input CSV file has a header (default: True). Use "True" or "False".')
@@ -130,6 +146,7 @@ if __name__ == "__main__":
     generate_embeddings(
         args.input, 
         args.output, 
+        args.model_type, 
         args.model_path, 
         structure_column_name=args.structure_column_name, 
         structure_column_num=args.structure_column_num, 
