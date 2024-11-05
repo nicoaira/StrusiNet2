@@ -5,6 +5,7 @@ import pandas as pd
 from tqdm import tqdm
 import argparse
 from src.model.siamese_model import SiameseResNetLSTM
+from src.model.GINModel import GINModel
 from src.model.utils import pad_and_convert_to_contact_matrix, dotbracket_to_graph, graph_to_tensor
 import re
 import os
@@ -12,7 +13,7 @@ import subprocess
 from pathlib import Path
 
 # Load the trained model
-def load_trained_model(model_path, input_channels=1, hidden_dim=256, lstm_layers=1, device='cpu'):
+def load_trained_model(model_path, model_type = "siamese", input_channels=1, hidden_dim=256, lstm_layers=1, device='cpu'):
     # Check if the model file exists, if not provide instruction to download it
     if not os.path.exists(model_path):
         print(f"Model file not found at {model_path}. Attempting to download...")
@@ -25,7 +26,10 @@ def load_trained_model(model_path, input_channels=1, hidden_dim=256, lstm_layers
             raise FileNotFoundError(f"Failed to download the model file. Please download it manually from {model_url} and place it in the 'saved_model/' directory.")
     
     # Instantiate the model
-    model = SiameseResNetLSTM(input_channels=input_channels, hidden_dim=hidden_dim, lstm_layers=lstm_layers)
+    if model_type == "siamese":
+        model = SiameseResNetLSTM(input_channels=input_channels, hidden_dim=hidden_dim, lstm_layers=lstm_layers)
+    elif model_type == "gin":
+        model = GINModel(input_dim=2, hidden_dim=256, output_dim=128)
 
     # Load the checkpoint that contains multiple states (epoch, optimizer, and model state_dict)
     checkpoint = torch.load(model_path, map_location=device, weights_only=True)
@@ -68,7 +72,7 @@ def validate_structure(structure):
 # Main function to generate embeddings from CSV or TSV
 def generate_embeddings(input, output, model_type, model_path, structure_column_name='secondary_structure', structure_column_num=None, max_len=641, device='cpu', header=True):
     # Load the trained model
-    model = load_trained_model(model_path, device=device)
+    model = load_trained_model(model_path, model_type, device=device)
     
     # Determine delimiter based on file extension
     delimiter = '\t' if input.endswith('.tsv') else ','
