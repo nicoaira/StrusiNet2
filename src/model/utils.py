@@ -3,6 +3,8 @@ import torch
 import torch.nn.functional as F
 import random
 from collections import Counter
+import networkx as nx
+from torch_geometric.utils import from_networkx
 
 # Padding Functions
 
@@ -87,3 +89,64 @@ def euclidean_dist(emb1, emb2):
     Compute the Euclidean distance between two embedding vectors.
     """
     return torch.norm(emb1 - emb2).item()
+
+def dotbracket_to_graph(dotbracket):
+    G = nx.Graph()
+    bases = []
+
+    # Add nodes and edges based on dot-bracket structure
+    # TODO: Node information is redundant, should it be removed?
+    for i, c in enumerate(dotbracket):
+        if c == '(':
+            bases.append(i)
+            G.add_node(i, label='unpaired')
+        elif c == ')':
+            if bases:
+                neighbor = bases.pop()
+                G.add_edge(i, neighbor, edge_type='base_pair')
+                G.nodes[i]['label'] = 'paired'
+                G.nodes[neighbor]['label'] = 'paired'
+            else:
+                print("Mismatched parentheses in input!")
+                return None
+        elif c == '.':
+            G.add_node(i, label='unpaired')
+        else:
+            print("Input is not in dot-bracket notation!")
+            return None
+
+        # Adding sequential (adjacent) edges
+        if i > 0:
+            G.add_edge(i, i - 1, edge_type='adjacent')
+    
+    return G
+
+
+def graph_to_tensor(G):
+    # Convert node labels to feature vectors
+    for node in G.nodes:
+        # Example encoding: paired = [1, 0], unpaired = [0, 1]
+        if G.nodes[node]['label'] == 'paired':
+            G.nodes[node]['x'] = [1, 0]
+        else:
+            G.nodes[node]['x'] = [0, 1]
+    
+    # Convert edge types to a numerical format if needed (optional)
+    for u, v, attr in G.edges(data=True):
+        if attr['edge_type'] == 'base_pair':
+            G.edges[u, v]['edge_attr'] = [1, 0]
+        else:  # adjacent
+            G.edges[u, v]['edge_attr'] = [0, 1]
+
+    # Convert NetworkX graph to PyTorch Geometric Data object
+    data = from_networkx(G)
+
+    # Set node features
+    # TODO: Node information is redundant, should it be removed?
+    data.x = torch.tensor([G.nodes[node]['x'] for node in G.nodes], dtype=torch.float)
+
+    # If you need edge attributes
+    if 'edge_attr' in data:
+        data.edge_attr = torch.tensor([G.edges[u, v]['edge_attr'] for u, v in G.edges], dtype=torch.float)
+
+    return data
