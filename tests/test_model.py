@@ -1,7 +1,7 @@
 import torch
 import unittest
 from src.model.siamese_model import SiameseResNetLSTM
-from utils import pad_and_convert_to_contact_matrix
+from src.utils import pad_and_convert_to_contact_matrix
 
 
 
