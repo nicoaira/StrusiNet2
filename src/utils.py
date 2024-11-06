@@ -1,10 +1,8 @@
 import numpy as np
 import torch
 import torch.nn.functional as F
-import random
-from collections import Counter
 import networkx as nx
-from torch_geometric.utils import from_networkx
+from torch_geometric.data import Data
 
 # Padding Functions
 
@@ -141,31 +139,11 @@ def dotbracket_to_graph(dotbracket):
     return G
 
 
-def graph_to_tensor(G):
-    # Convert node labels to feature vectors
-    for node in G.nodes:
-        # Example encoding: paired = [1, 0], unpaired = [0, 1]
-        if G.nodes[node]['label'] == 'paired':
-            G.nodes[node]['x'] = [1, 0]
-        else:
-            G.nodes[node]['x'] = [0, 1]
-    
-    # Convert edge types to a numerical format if needed (optional)
-    for u, v, attr in G.edges(data=True):
-        if attr['edge_type'] == 'base_pair':
-            G.edges[u, v]['edge_attr'] = [1, 0]
-        else:  # adjacent
-            G.edges[u, v]['edge_attr'] = [0, 1]
+def graph_to_tensor(g):
+    x = torch.Tensor([[0, 1] if node['label'] == 'unpaired' else [1, 0] for node in g.nodes])
+    edge_index = torch.LongTensor(list(g.edges())).t().contiguous()
 
-    # Convert NetworkX graph to PyTorch Geometric Data object
-    data = from_networkx(G)
-
-    # Set node features
-    # TODO: Node information is redundant, should it be removed?
-    data.x = torch.tensor([G.nodes[node]['x'] for node in G.nodes], dtype=torch.float)
-
-    # If you need edge attributes
-    if 'edge_attr' in data:
-        data.edge_attr = torch.tensor([G.edges[u, v]['edge_attr'] for u, v in G.edges], dtype=torch.float)
+    # Graph to Data object
+    data = Data(x=x, edge_index=edge_index)
 
     return data
