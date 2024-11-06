@@ -69,6 +69,25 @@ def pad_and_convert_to_contact_matrix(db_structure, max_len, padding_value='.'):
 
     return contact_matrix
 
+def dot_bracket_to_contact_matrix(dot_bracket):
+    """
+    Converts dot-bracket notation into a contact matrix representation where
+    1 represents base pairing between positions and 0 represents no interaction.
+    """
+    n = len(dot_bracket)
+    contact_matrix = np.zeros((n, n), dtype=int)
+    stack = []
+
+    for i, char in enumerate(dot_bracket):
+        if char == '(':
+            stack.append(i)
+        elif char == ')' and stack:
+            j = stack.pop()
+            contact_matrix[i, j] = 1
+            contact_matrix[j, i] = 1  # Ensure symmetry
+
+    return contact_matrix
+
 # Similarity Functions
 
 def cos_similarity(emb_1, emb_2):
