@@ -1,9 +1,9 @@
 import torch.nn as nn
 from torch_geometric.nn import GINConv, Set2Set
 
-class GNNm(nn.Module):
+class GINModel(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, dropout=0.1):
-        super(GNNm, self).__init__()
+        super(GINModel, self).__init__()
 
         # Define GIN convolution layers
         net = nn.Sequential(
@@ -22,7 +22,7 @@ class GNNm(nn.Module):
         # Final projection layer for embedding
         self.fc = nn.Linear(hidden_dim * 2, output_dim)  # *2 due to Set2Set doubling feature dim
 
-    def forward(self, data):
+    def forward_once(self, data):
         x, edge_index, batch = data.x, data.edge_index, data.batch
 
         # Pass through GIN convolution layer
@@ -36,3 +36,11 @@ class GNNm(nn.Module):
         embedding = self.fc(x)
 
         return embedding
+
+    def forward(self, anchor, positive, negative):
+        # Forward pass for each of the triplet inputs
+        anchor_out = self.forward_once(anchor)
+        positive_out = self.forward_once(positive)
+        negative_out = self.forward_once(negative)
+
+        return anchor_out, positive_out, negative_out

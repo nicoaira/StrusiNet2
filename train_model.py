@@ -1,7 +1,6 @@
 import torch
-import torch.nn as nn
 from torch import optim
-from torch_geometric.data import DataLoader as GeoDataLoader
+from torch_geometric.loader import DataLoader as GeoDataLoader
 from torch.utils.data import DataLoader as TorchDataLoader
 from sklearn.model_selection import train_test_split
 import pandas as pd
@@ -9,7 +8,7 @@ import argparse
 from tqdm import tqdm
 from src.early_stopping import EarlyStopping
 from src.gin_rna_dataset import GINRNADataset
-from src.model.gin_model import GINModel
+from src.model.gin_model2 import GINModel
 from src.model.siamese_model import SiameseResNetLSTM
 from src.triplet_loss import TripletLoss
 from src.triplet_rna_dataset import TripletRNADataset
@@ -34,34 +33,6 @@ def save_model_to_local(model, optimizer, epoch, model_save_path):
     print(f"Model saved to {model_save_path}")
 
 
-def evaluate_batch(model, batch, criterion, model_type, device):
-    """
-    Evaluate a single batch for GIN or Siamese model.
-
-    Args:
-        model (nn.Module): The model being trained.
-        batch (tuple): The input batch from the DataLoader.
-        criterion (nn.Module): The loss function.
-        model_type (str): Type of model ('gin' or 'siamese').
-        device (str): Device to use ('cuda' or 'cpu').
-
-    Returns:
-        loss (torch.Tensor): Computed loss for the batch.
-    """
-    if model_type == "gin":
-        outputs = model(batch)  # Forward pass for GIN
-        loss = criterion(outputs, batch.x)
-
-    elif model_type == "siamese":
-        anchor, positive, negative = batch
-        anchor, positive, negative = anchor.to(device), positive.to(device), negative.to(device)
-        anchor_out, positive_out, negative_out = model(anchor, positive, negative)  # Forward pass for Siamese
-        loss = criterion(anchor_out, positive_out, negative_out)
-
-    return loss
-
-
-
 def train_model_with_early_stopping(
         model,
         model_save_path,
@@ -69,7 +40,6 @@ def train_model_with_early_stopping(
         val_loader,
         optimizer,
         criterion,
-        model_type,
         num_epochs,
         patience,
         device
@@ -83,7 +53,6 @@ def train_model_with_early_stopping(
         val_loader (DataLoader): The DataLoader for validation data.
         optimizer (torch.optim.Optimizer): The optimizer.
         criterion (nn.Module): The loss function.
-        model_type (str): Type of model ('gin' for GINModel or 'siamese' for Siamese).
         num_epochs (int): Number of epochs for training.
         patience (int): Early stopping patience.
         device (str): Device to use ('cuda' or 'cpu').
@@ -98,7 +67,10 @@ def train_model_with_early_stopping(
         progress_bar = tqdm(enumerate(train_loader), total=len(train_loader), desc=f"Epoch {epoch + 1}/{num_epochs} - Training")
         for i, batch in progress_bar:
             optimizer.zero_grad()
-            loss = evaluate_batch(model, batch, criterion, model_type, device)
+            anchor, positive, negative = batch
+            anchor, positive, negative = anchor.to(device), positive.to(device), negative.to(device)
+            anchor_out, positive_out, negative_out = model(anchor, positive, negative)
+            loss = criterion(anchor_out, positive_out, negative_out)
             loss.backward()
             optimizer.step()
             running_loss += loss.item()
@@ -110,7 +82,10 @@ def train_model_with_early_stopping(
         with torch.no_grad():
             progress_bar_val = tqdm(enumerate(val_loader), total=len(val_loader), desc=f"Epoch {epoch + 1}/{num_epochs} - Validation")
             for i, batch in progress_bar_val:
-                loss = evaluate_batch(model, batch, criterion, model_type, device)
+                anchor, positive, negative = batch
+                anchor, positive, negative = anchor.to(device), positive.to(device), negative.to(device)
+                anchor_out, positive_out, negative_out = model(anchor, positive, negative)
+                loss = criterion(anchor_out, positive_out, negative_out)
                 val_loss += loss.item()
                 progress_bar_val.set_postfix({"Val Loss": val_loss / (i + 1)})
 
@@ -157,7 +132,6 @@ def main():
             max(df['structure_N'].str.len())
         )
         model = SiameseResNetLSTM(input_channels=1, hidden_dim=args.hidden_dim, lstm_layers=1)
-        criterion = TripletLoss(margin=1.0)
         train_dataset = TripletRNADataset(train_df, max_len=max_len)
         val_dataset = TripletRNADataset(val_df, max_len=max_len)
         train_loader = TorchDataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, pin_memory=True)
@@ -165,13 +139,13 @@ def main():
 
     elif args.model_type == "gin":
         model = GINModel(input_dim=2, hidden_dim=args.hidden_dim, output_dim=args.output_dim)
-        criterion = nn.CrossEntropyLoss()  # Replace with the appropriate criterion for your GIN task
         train_dataset = GINRNADataset(train_df)
         val_dataset = GINRNADataset(val_df)
         train_loader = GeoDataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, pin_memory=True)
         val_loader = GeoDataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, pin_memory=True)
 
-    # Set up dataloaders
+    # Set up criterion
+    criterion = TripletLoss(margin=1.0)
 
     # Set up optimizer
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
@@ -184,7 +158,6 @@ def main():
         val_loader,
         optimizer,
         criterion,
-        model_type=args.model_type,
         num_epochs=args.num_epochs,
         patience=args.patience,
         device=args.device
