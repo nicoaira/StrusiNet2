@@ -9,7 +9,16 @@ class GINRNADataset(Dataset):
         return len(self.dataframe)
 
     def __getitem__(self, idx):
-        dot_bracket = self.dataframe.iloc[idx]['secondary_structure']
-        G = dotbracket_to_graph(dot_bracket)
-        data = graph_to_tensor(G)
-        return data
+        anchor_structure = self.dataframe.iloc[idx]["structure_A"]
+        positive_structure = self.dataframe.iloc[idx]["structure_P"]
+        negative_structure = self.dataframe.iloc[idx]["structure_N"]
+
+        g_anchor = dotbracket_to_graph(anchor_structure)
+        g_positive = dotbracket_to_graph(positive_structure)
+        g_negative = dotbracket_to_graph(negative_structure)
+
+        data_anchor = graph_to_tensor(g_anchor)
+        data_positive = graph_to_tensor(g_positive)
+        data_negative = graph_to_tensor(g_negative)
+        
+        return data_anchor, data_positive, data_negative
