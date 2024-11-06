@@ -140,7 +140,7 @@ def dotbracket_to_graph(dotbracket):
 
 
 def graph_to_tensor(g):
-    x = torch.Tensor([[0, 1] if node['label'] == 'unpaired' else [1, 0] for node in g.nodes])
+    x = torch.Tensor([[0, 1] if g.nodes[node]['label'] == 'unpaired' else [1, 0] for node in g.nodes])
     edge_index = torch.LongTensor(list(g.edges())).t().contiguous()
 
     # Graph to Data object
