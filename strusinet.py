@@ -5,7 +5,7 @@ import pandas as pd
 from tqdm import tqdm
 import argparse
 from src.model.siamese_model import SiameseResNetLSTM
-from model.gin_model import GINModel
+from model.gin_model2 import GINModel
 from utils import pad_and_convert_to_contact_matrix, dotbracket_to_graph, graph_to_tensor
 import re
 import os
@@ -56,7 +56,7 @@ def get_gin_embedding(graph, model):
     
     model.eval()
     with torch.no_grad():
-        embedding = model(tg)
+        embedding = model.forward_once(tg)
     return ','.join(f'{x:.6f}' for x in embedding.cpu().numpy().flatten())
 
 
