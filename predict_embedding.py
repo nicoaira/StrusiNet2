@@ -26,7 +26,7 @@ def load_trained_model(model_path, model_type = "siamese", graph_encoding="alloc
     
     # Instantiate the model
     if model_type == "siamese":
-        model = SiameseResNetLSTM(input_channels=input_channels, hidden_dim=hidden_dim, lstm_layers=lstm_layers)
+        model = SiameseResNetLSTM(input_channels=2, hidden_dim=hidden_dim, lstm_layers=lstm_layers)
     elif model_type == "gin":
         model = GINModel(graph_encoding=graph_encoding, hidden_dim=256, output_dim=128)
 
