@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-import torch.nn.functional as F
 import networkx as nx
 from torch_geometric.data import Data
 import forgi.graph.bulge_graph as fgb
@@ -86,27 +85,6 @@ def dot_bracket_to_contact_matrix(dot_bracket):
             contact_matrix[j, i] = 1  # Ensure symmetry
 
     return contact_matrix
-
-# Similarity Functions
-
-def cos_similarity(emb_1, emb_2):
-    """
-    Compute cosine similarity between two embeddings.
-    """
-    cos_similarity = F.cosine_similarity(emb_1, emb_2, dim=1)
-    return cos_similarity.item()
-
-def square_dist(emb1, emb2):
-    """
-    Compute the squared distance between two embeddings.
-    """
-    return torch.sum((emb1 - emb2) ** 2).item()
-
-def euclidean_dist(emb1, emb2):
-    """
-    Compute the Euclidean distance between two embedding vectors.
-    """
-    return torch.norm(emb1 - emb2).item()
 
 def dotbracket_to_graph(dotbracket):
     G = nx.Graph()
