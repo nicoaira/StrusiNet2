@@ -3,6 +3,7 @@ import torch
 import torch.nn.functional as F
 import networkx as nx
 from torch_geometric.data import Data
+import forgi.graph.bulge_graph as fgb
 
 # Padding Functions
 
@@ -141,6 +142,36 @@ def dotbracket_to_graph(dotbracket):
 
 def graph_to_tensor(g):
     x = torch.Tensor([[0, 1] if g.nodes[node]['label'] == 'unpaired' else [1, 0] for node in g.nodes])
+    edge_index = torch.LongTensor(list(g.edges())).t().contiguous()
+
+    # Graph to Data object
+    data = Data(x=x, edge_index=edge_index)
+
+    return data
+
+def dotbracket_to_forgi_graph(dotbracket):
+    bulge_graph = fgb.BulgeGraph.from_dotbracket(dotbracket)
+
+    g = nx.Graph()
+    
+    nodes = list(bulge_graph.edges.keys())
+
+    for i,n in enumerate(nodes):
+        g.add_node(i, structure = n[0], length = bulge_graph.element_length(n))
+        for c in bulge_graph.edges[n]:
+            g.add_edge(i,nodes.index(c))
+    return g
+
+def forgi_graph_to_tensor(g):
+    element_type_map = {
+        'f': [1, 0, 0, 0, 0, 0, 0],
+        't': [0, 1, 0, 0, 0, 0, 0],
+        's': [0, 0, 1, 0, 0, 0, 0],
+        'i': [0, 0, 0, 1, 0, 0, 0],
+        'm': [0, 0, 0, 0, 1, 0, 0],
+        'h': [0, 0, 0, 0, 0, 1, 0]
+    }
+    x = torch.Tensor([element_type_map.get(g.nodes[node]["structure"]) + [g.nodes[node]["length"]] for node in g.nodes])
     edge_index = torch.LongTensor(list(g.edges())).t().contiguous()
 
     # Graph to Data object
