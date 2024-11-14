@@ -5,15 +5,14 @@ import pandas as pd
 from tqdm import tqdm
 import argparse
 from src.model.siamese_model import SiameseResNetLSTM
-from model.gin_model2 import GINModel
-from utils import pad_and_convert_to_contact_matrix, dotbracket_to_graph, graph_to_tensor
-import re
+from src.model.gin_model2 import GINModel
+from src.utils import dotbracket_to_forgi_graph, forgi_graph_to_tensor, pad_and_convert_to_contact_matrix, dotbracket_to_graph, graph_to_tensor
 import os
 import subprocess
 from pathlib import Path
 
 # Load the trained model
-def load_trained_model(model_path, model_type = "siamese", input_channels=1, hidden_dim=256, lstm_layers=1, device='cpu'):
+def load_trained_model(model_path, model_type = "siamese", graph_encoding="allocator", hidden_dim=256, lstm_layers=1, device='cpu'):
     # Check if the model file exists, if not provide instruction to download it
     if not os.path.exists(model_path):
         print(f"Model file not found at {model_path}. Attempting to download...")
@@ -29,7 +28,7 @@ def load_trained_model(model_path, model_type = "siamese", input_channels=1, hid
     if model_type == "siamese":
         model = SiameseResNetLSTM(input_channels=input_channels, hidden_dim=hidden_dim, lstm_layers=lstm_layers)
     elif model_type == "gin":
-        model = GINModel(input_dim=2, hidden_dim=256, output_dim=128)
+        model = GINModel(graph_encoding=graph_encoding, hidden_dim=256, output_dim=128)
 
     # Load the checkpoint that contains multiple states (epoch, optimizer, and model state_dict)
     checkpoint = torch.load(model_path, map_location=device, weights_only=True)
@@ -43,7 +42,8 @@ def load_trained_model(model_path, model_type = "siamese", input_channels=1, hid
     return model
 
 # Function to get embedding from contact matrix
-def get_siamese_embedding(contact_matrix, model, device='cpu'):
+def get_siamese_embedding(model, structure, max_len, device='cpu'):
+    contact_matrix = pad_and_convert_to_contact_matrix(structure, max_len)
     contact_tensor = torch.tensor(contact_matrix, dtype=torch.float32).unsqueeze(0).unsqueeze(0).to(device)  # Shape: (1, 1, max_len, max_len)
     
     with torch.no_grad():
@@ -51,9 +51,14 @@ def get_siamese_embedding(contact_matrix, model, device='cpu'):
     return ','.join(f'{x:.6f}' for x in embedding.cpu().numpy().flatten())
 
 # Function to get embedding from graph
-def get_gin_embedding(graph, model):
-    tg = graph_to_tensor(graph)
-    
+def get_gin_embedding(model, graph_encoding, structure):
+    if graph_encoding == "allocator":
+        graph = dotbracket_to_graph(structure)
+        tg = graph_to_tensor(graph)
+    elif graph_encoding == "forgi":
+        graph = dotbracket_to_forgi_graph(structure)
+        tg = forgi_graph_to_tensor(graph)
+
     model.eval()
     with torch.no_grad():
         embedding = model.forward_once(tg)
@@ -70,9 +75,9 @@ def validate_structure(structure):
         raise ValueError(f"Invalid characters found in the column used for secondary structure: '{structure}'. Valid characters are: {valid_characters}")
 
 # Main function to generate embeddings from CSV or TSV
-def generate_embeddings(input, output, model_type, model_path, structure_column_name='secondary_structure', structure_column_num=None, max_len=641, device='cpu', header=True):
+def generate_embeddings(input, output, model_type, model_path, structure_column_name='secondary_structure', structure_column_num=None, max_len=641, device='cpu', header=True, graph_encoding = 'allocator'):
     # Load the trained model
-    model = load_trained_model(model_path, model_type, device=device)
+    model = load_trained_model(model_path, model_type, graph_encoding, device=device)
     
     # Determine delimiter based on file extension
     delimiter = '\t' if input.endswith('.tsv') else ','
@@ -106,13 +111,9 @@ def generate_embeddings(input, output, model_type, model_path, structure_column_
             # Validate the dot-bracket structure
             validate_structure(structure)
             if model_type == "siamese":
-                # Convert dot-bracket structure to contact matrix
-                contact_matrix = pad_and_convert_to_contact_matrix(structure, max_len)
-                # Get the embedding using the neural network
-                embedding = get_siamese_embedding(contact_matrix, model, device=device)
+                embedding = get_siamese_embedding(model, structure, max_len, device=device)
             elif model_type == "gin":
-                graph = dotbracket_to_graph(structure)
-                embedding = get_gin_embedding(graph, model)
+                embedding = get_gin_embedding(model, graph_encoding, structure)
 
             embeddings.append(embedding)  # Convert list to comma-separated string
 
@@ -135,7 +136,9 @@ if __name__ == "__main__":
     default_model_path = script_directory / 'saved_model' / 'ResNet-Secondary.pth'
     parser.add_argument('--model_path', type=str, default=str(default_model_path), help=f'Path to the trained model file (default: {default_model_path}).')
     
-    parser.add_argument('--model_type', type=str, default='siamese', help='Model type to run (e.g., "siamese" or "gin").')
+    parser.add_argument('--model_type', type=str, choices=['siamese', 'gin'], default='siamese', help='Model type to run (e.g., "siamese" or "gin").')
+    
+    parser.add_argument('--graph_encoding', type=str, choices=['allocator', 'forgi'], default='allocator', help='Encoding to use for the transformation to graph. Only used in case of gin modeling')
 
     parser.add_argument('--device', type=str, default='cpu', help='Device to run the model on (e.g., "cpu" or "cuda").')
     parser.add_argument('--header', type=str, default='True', help='Specify whether the input CSV file has a header (default: True). Use "True" or "False".')
@@ -155,5 +158,6 @@ if __name__ == "__main__":
         structure_column_name=args.structure_column_name, 
         structure_column_num=args.structure_column_num, 
         device=args.device,
-        header=args.header
+        header=args.header,
+        graph_encoding=args.graph_encoding
     )
