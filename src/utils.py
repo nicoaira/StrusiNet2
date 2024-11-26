@@ -142,12 +142,12 @@ def dotbracket_to_forgi_graph(dotbracket):
 
 def forgi_graph_to_tensor(g):
     element_type_map = {
-        'f': [1, 0, 0, 0, 0, 0, 0],
-        't': [0, 1, 0, 0, 0, 0, 0],
-        's': [0, 0, 1, 0, 0, 0, 0],
-        'i': [0, 0, 0, 1, 0, 0, 0],
-        'm': [0, 0, 0, 0, 1, 0, 0],
-        'h': [0, 0, 0, 0, 0, 1, 0]
+        'f': [1, 0, 0, 0, 0, 0],
+        't': [0, 1, 0, 0, 0, 0],
+        's': [0, 0, 1, 0, 0, 0],
+        'i': [0, 0, 0, 1, 0, 0],
+        'm': [0, 0, 0, 0, 1, 0],
+        'h': [0, 0, 0, 0, 0, 1]
     }
     x = torch.Tensor([element_type_map.get(g.nodes[node]["structure"]) + [g.nodes[node]["length"]] for node in g.nodes])
     edge_index = torch.LongTensor(list(g.edges())).t().contiguous()
