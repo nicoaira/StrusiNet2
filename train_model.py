@@ -12,7 +12,15 @@ from src.model.gin_model_single_layer import GINModel
 from src.model.siamese_model import SiameseResNetLSTM
 from src.triplet_loss import TripletLoss
 from src.triplet_rna_dataset import TripletRNADataset
+from src.utils import is_valid_dot_bracket
 
+def remove_invalid_structures(df):
+    valid_structures = (
+        df["structure_A"].apply(is_valid_dot_bracket) & 
+        df["structure_P"].apply(is_valid_dot_bracket) & 
+        df["structure_N"].apply(is_valid_dot_bracket)
+    )
+    return df[valid_structures]
 
 def save_model_to_local(model, optimizer, epoch, model_save_path):
     """
@@ -123,6 +131,7 @@ def main():
     # Load data
     dataset_path = args.input_path
     df = pd.read_csv(dataset_path)
+    df = remove_invalid_structures(df)
     train_df, val_df = train_test_split(df, test_size=0.2, random_state=42)
 
     # Instantiate model, criterion, optimizer, and dataset based on model type
