@@ -4,6 +4,22 @@ import networkx as nx
 from torch_geometric.data import Data
 import forgi.graph.bulge_graph as fgb
 
+def is_valid_dot_bracket(structure):
+    """
+    Check if a dot-bracket RNA structure has matching open and closing parentheses.
+    """
+    stack = []
+    for char in structure:
+        if char == '(':
+            stack.append(char)
+        elif char == ')':
+            if not stack:
+                return False
+            stack.pop()
+    
+    # If stack is empty, all parentheses are matched
+    return len(stack) == 0
+
 # Padding Functions
 
 def center_pad_matrix(db_structure, max_len, padding_value='.'): 
