@@ -8,7 +8,7 @@ import argparse
 from tqdm import tqdm
 from src.early_stopping import EarlyStopping
 from src.gin_rna_dataset import GINRNADataset
-from src.model.gin_model2 import GINModel
+from model.gin_model_single_layer import GINModel
 from src.model.siamese_model import SiameseResNetLSTM
 from src.triplet_loss import TripletLoss
 from src.triplet_rna_dataset import TripletRNADataset

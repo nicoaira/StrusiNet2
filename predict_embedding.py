@@ -5,7 +5,7 @@ import pandas as pd
 from tqdm import tqdm
 import argparse
 from src.model.siamese_model import SiameseResNetLSTM
-from src.model.gin_model2 import GINModel
+from model.gin_model_single_layer import GINModel
 from src.utils import dotbracket_to_forgi_graph, forgi_graph_to_tensor, pad_and_convert_to_contact_matrix, dotbracket_to_graph, graph_to_tensor
 import os
 import subprocess
