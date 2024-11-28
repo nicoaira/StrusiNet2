@@ -1,5 +1,5 @@
 import params
-from data_generation.data_generation_utils import parallel_structure_generation
+from data_generation_utils import parallel_structure_generation
 import argparse
 import pandas as pd
 
