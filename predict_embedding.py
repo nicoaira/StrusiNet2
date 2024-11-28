@@ -28,7 +28,7 @@ def load_trained_model(model_path, model_type = "siamese", graph_encoding="alloc
     if model_type == "siamese":
         model = SiameseResNetLSTM(input_channels=2, hidden_dim=hidden_dim, lstm_layers=lstm_layers)
     elif model_type == "gin":
-        model = GINModel(graph_encoding=graph_encoding, hidden_dim=256, output_dim=128)
+        model = GINModel(graph_encoding=graph_encoding, hidden_dim=128, output_dim=32)
 
     # Load the checkpoint that contains multiple states (epoch, optimizer, and model state_dict)
     checkpoint = torch.load(model_path, map_location=device, weights_only=True)
