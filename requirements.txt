@@ -10,3 +10,4 @@ forgi==2.2.3
 igraph==0.11.8
 matplotlib==3.9.2
 seaborn==0.13.2
+plotly==5.24.1
