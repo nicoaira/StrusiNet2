@@ -223,11 +223,8 @@ def generate_validation_embeddings(model, validation_loader):
   negative_embeddings = torch.cat(negative_embeddings)
   return anchor_embeddings, positive_embeddings, negative_embeddings
    
-def save_model_histograms(model, validation_loader, output_folder):
-  anchor_embeddings, positive_embeddings, negative_embeddings = generate_validation_embeddings(model, validation_loader)
-  save_histogram(output_folder, anchor_embeddings, positive_embeddings, negative_embeddings, 'cosine')
-  save_histogram(output_folder, anchor_embeddings, positive_embeddings, negative_embeddings, 'square_dist')
-
+def save_model_histograms(model, validation_loader, output_name):
+  
   def save_histogram(output_folder, anchor_embeddings, positive_embeddings, negative_embeddings, metric):
       
     if metric == 'cosine':
@@ -253,8 +250,12 @@ def save_model_histograms(model, validation_loader, output_folder):
     plt.title(f'Histogram of Anchor-Positive and Anchor-Negative Distances ({metric.capitalize()} Metric)')
     plt.legend()
 
-    # Save the plot
-    os.makedirs(output_folder, exist_ok=True)  # Ensure output directory exists
     output_path = os.path.join(output_folder, f"histogram_{metric}.png")
     plt.savefig(output_path)
     plt.close()  # Close the plot to free memory
+  
+  output_folder = f"output/{output_name}"
+  os.makedirs(output_folder, exist_ok=True)  # Ensure output directory exists
+  anchor_embeddings, positive_embeddings, negative_embeddings = generate_validation_embeddings(model, validation_loader)
+  save_histogram(output_folder, anchor_embeddings, positive_embeddings, negative_embeddings, 'cosine')
+  save_histogram(output_folder, anchor_embeddings, positive_embeddings, negative_embeddings, 'square_dist')
