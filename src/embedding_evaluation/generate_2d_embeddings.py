@@ -65,12 +65,10 @@ def save_scatter_2d(output_folder, df, embedding_tsne, column = 'rfam'):
         title='t-SNE projection of RNA embeddings',
         hover_data=[column]
     )
-    # Ensure the output directory exists
-    os.makedirs(output_folder, exist_ok=True)
 
     # Define file paths
-    html_output_path = os.path.join(output_folder, f"scatter_tsne_{column}.html")
-    png_output_path = os.path.join(output_folder, f"scatter_tsne_{column}.png")
+    html_output_path = f"{output_folder}/scatter_tsne_{column}.html"
+    png_output_path = f"{output_folder}/scatter_tsne_{column}.png"
 
     # Save as an interactive HTML file
     fig_tsne12.write_html(html_output_path)
@@ -83,7 +81,7 @@ def save_scatter_2d(output_folder, df, embedding_tsne, column = 'rfam'):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="")
     parser.add_argument('--predict_embedding_path', type=str, required=True)
-    parser.add_argument('--output_folder', default = "output", type=str)
+    parser.add_argument('--output_name', default = "output", type=str)
     parser.add_argument('--sample_num', default = 10000, type=int)
     args = parser.parse_args()
 
@@ -94,7 +92,10 @@ if __name__ == "__main__":
     df_random_sample = df.iloc[random_indices].copy()
 
     embedding_tsne = project_embeddings(df_random_sample)
-    save_scatter_2d(args.output_folder, df_random_sample, embedding_tsne, column = 'rfam')
-    save_scatter_2d(args.output_folder, df_random_sample, embedding_tsne, column = 'rna_type')
+
+    output_folder = f"output/{args.output_name}"
+    os.makedirs(output_folder, exist_ok=True)
+    save_scatter_2d(output_folder, df_random_sample, embedding_tsne, column = 'rfam')
+    save_scatter_2d(output_folder, df_random_sample, embedding_tsne, column = 'rna_type')
 
     
