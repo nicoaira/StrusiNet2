@@ -40,12 +40,12 @@ def save_model_to_local(model, optimizer, epoch, output_name):
     - epoch: The current epoch to save.
     - model_save_path: Path to save the model (without file extension).
     """
-    output_folder = f"output/{output_name}"
     # Get the current timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_path = f"output/{output_name}/{output_name}_{timestamp}.pth"
 
     # Append the timestamp to the file name
-    file_name_with_timestamp = f"output_folder/{output_name}_{timestamp}.pth"
+    file_name_with_timestamp = output_path
 
     # Create the checkpoint
     checkpoint = {
