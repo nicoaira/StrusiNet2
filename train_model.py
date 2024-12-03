@@ -129,7 +129,7 @@ def train_model_with_early_stopping(
     output_folder = f"output/{output_name}"
     os.makedirs(output_folder, exist_ok=True)  # Ensure output directory exists
     save_model_to_local(model, optimizer, epoch, output_name)
-    save_model_histograms(model, val_loader, output_folder)
+    save_model_histograms(model, val_loader, output_name)
 
 
 
