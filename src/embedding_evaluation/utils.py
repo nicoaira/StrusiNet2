@@ -2,7 +2,6 @@ from matplotlib import pyplot as plt
 import torch
 import torch.nn.functional as F
 from sklearn.metrics import roc_curve, auc, f1_score
-import matplotlib as plt
 import seaborn as sns
 from minineedle import needle
 from scipy.stats import ttest_ind
@@ -26,7 +25,7 @@ def square_dist(emb1, emb2):
     Returns:
     - distance (float): The squared distance between the two embeddings.
     """
-    return torch.sum((emb1 - emb2) ** 2).item()
+    return torch.sum((emb1 - emb2) ** 2, dim=1)
 
 
 def euclidean_dist(emb1, emb2):
