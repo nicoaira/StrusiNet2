@@ -1,7 +1,6 @@
-import torch
 import torch.nn as nn
+from torch_geometric.nn import global_add_pool
 from torch_geometric.nn import GINConv
-from torch_geometric.data import Data
 
 class GINModel2Layers(nn.Module):
     def __init__(self, hidden_dim, output_dim):
@@ -26,14 +25,14 @@ class GINModel2Layers(nn.Module):
         self.fc = nn.Linear(hidden_dim, output_dim)
 
     def forward_once(self, data):
-        x, edge_index = data.x, data.edge_index
+        x, edge_index, batch = data.x, data.edge_index, data.batch
 
         # Pass data through GIN layers
         x = self.conv1(x, edge_index)
         x = self.conv2(x, edge_index)
 
         # Sum pooling for graph-level embedding
-        x = torch.sum(x, dim=0)  # sum pooling
+        x = global_add_pool(x, batch)
 
         # Final projection to embedding space
         embedding = self.fc(x)
