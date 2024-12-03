@@ -145,9 +145,10 @@ def generate_embeddings(input, output, samples, model_type, model_path, structur
     # Add the embeddings to the DataFrame
     df['embedding_vector'] = embeddings
 
+    output_path = f"output/{output}/{output}_embeddings.tsv"
     # Save the output TSV
-    df.to_csv(output, sep='\t', index=False)
-    print(f"Embeddings saved to {output}")
+    df.to_csv(output_path, sep='\t', index=False)
+    print(f"Embeddings saved to {output_path}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -156,8 +157,8 @@ if __name__ == "__main__":
                         help='Path to the input CSV/TSV file containing RNA secondary structures.')
     parser.add_argument('--samples', type=int)
     
-    parser.add_argument('--output', type=str, required=True,
-                        help='Path to save the output TSV file with embeddings.')
+    parser.add_argument('--output_name', type=str, required=True,
+                        help='Output name')
     parser.add_argument('--structure_column_name', type=str,
                         help='Name of the column with the RNA secondary structures.')
     parser.add_argument('--structure_column_num', type=int,
@@ -190,7 +191,7 @@ if __name__ == "__main__":
     # Generate embeddings
     generate_embeddings(
         args.input,
-        args.output,
+        args.output_name,
         args.samples,
         args.model_type,
         args.model_path,
