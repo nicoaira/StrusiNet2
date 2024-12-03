@@ -5,3 +5,5 @@ sampled_rfam_no_header.csv
 example_data/*
 output/
 .DS_Store
+*.ipynb
+*.csv
