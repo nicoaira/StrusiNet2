@@ -1,7 +1,7 @@
 saved_model/*.pth
 sampled_rfam_with_embeddings.csv
 sampled_rfam_no_header.csv
-*/__pycache__
+**/__pycache__
 example_data/*
 output/
 .DS_Store
