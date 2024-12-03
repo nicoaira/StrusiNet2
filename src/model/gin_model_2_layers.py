@@ -3,13 +3,13 @@ import torch.nn as nn
 from torch_geometric.nn import GINConv
 from torch_geometric.data import Data
 
-class GINModel(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim):
-        super(GINModel, self).__init__()
+class GINModel2Layers(nn.Module):
+    def __init__(self, hidden_dim, output_dim):
+        super(GINModel2Layers, self).__init__()
 
         # Define GIN layers
         self.conv1 = GINConv(nn.Sequential(
-            nn.Linear(input_dim, hidden_dim),
+            nn.Linear(1, hidden_dim),
             nn.ReLU(),
             nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU()
@@ -25,7 +25,7 @@ class GINModel(nn.Module):
         # Fully connected layer to project to embedding space
         self.fc = nn.Linear(hidden_dim, output_dim)
 
-    def forward(self, data):
+    def forward_once(self, data):
         x, edge_index = data.x, data.edge_index
 
         # Pass data through GIN layers
@@ -38,3 +38,11 @@ class GINModel(nn.Module):
         # Final projection to embedding space
         embedding = self.fc(x)
         return embedding
+    
+    def forward(self, anchor, positive, negative):
+        # Forward pass for each of the triplet inputs
+        anchor_out = self.forward_once(anchor)
+        positive_out = self.forward_once(positive)
+        negative_out = self.forward_once(negative)
+
+        return anchor_out, positive_out, negative_out
