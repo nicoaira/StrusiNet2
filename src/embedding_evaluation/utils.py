@@ -6,6 +6,7 @@ import seaborn as sns
 from minineedle import needle
 from scipy.stats import ttest_ind
 import os
+from tqdm import tqdm
 
 def cos_similarity(emb_1, emb_2):
 
@@ -204,7 +205,8 @@ def generate_validation_embeddings(model, validation_loader):
   negative_embeddings = []
 
   with torch.no_grad():
-      for batch in validation_loader:
+      progress_bar_val = tqdm(enumerate(validation_loader), total=len(validation_loader))
+      for _, batch in progress_bar_val:
           anchor, positive, negative = batch
 
           # Forward pass
