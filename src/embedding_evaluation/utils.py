@@ -1,3 +1,4 @@
+from matplotlib import pyplot as plt
 import torch
 import torch.nn.functional as F
 from sklearn.metrics import roc_curve, auc, f1_score
@@ -5,6 +6,7 @@ import matplotlib as plt
 import seaborn as sns
 from minineedle import needle
 from scipy.stats import ttest_ind
+import os
 
 def cos_similarity(emb_1, emb_2):
 
@@ -194,3 +196,65 @@ def model_stadistics(df, metric, metric_type, RNA_type, pairing_type='pair_type2
   print('\n')
 
   plot_distribution(x=metric, df=df, pairing_type=pairing_type)
+
+
+def generate_validation_embeddings(model, validation_loader):
+   
+  anchor_embeddings = []
+  positive_embeddings = []
+  negative_embeddings = []
+
+  with torch.no_grad():
+      for batch in validation_loader:
+          anchor, positive, negative = batch
+
+          # Forward pass
+          anchor_out, positive_out, negative_out = model(
+              anchor, positive, negative)
+
+          # Collect embeddings
+          anchor_embeddings.append(anchor_out)
+          positive_embeddings.append(positive_out)
+          negative_embeddings.append(negative_out)
+
+  # Concatenate the results into single tensors
+  anchor_embeddings = torch.cat(anchor_embeddings)
+  positive_embeddings = torch.cat(positive_embeddings)
+  negative_embeddings = torch.cat(negative_embeddings)
+  return anchor_embeddings, positive_embeddings, negative_embeddings
+   
+def save_model_histograms(model, validation_loader, output_folder):
+  anchor_embeddings, positive_embeddings, negative_embeddings = generate_validation_embeddings(model, validation_loader)
+  save_histogram(output_folder, anchor_embeddings, positive_embeddings, negative_embeddings, 'cosine')
+  save_histogram(output_folder, anchor_embeddings, positive_embeddings, negative_embeddings, 'square_dist')
+
+  def save_histogram(output_folder, anchor_embeddings, positive_embeddings, negative_embeddings, metric):
+      
+    if metric == 'cosine':
+      anchor_positive_similarity = F.cosine_similarity(anchor_embeddings, positive_embeddings, dim=1)
+      anchor_negative_similarity = F.cosine_similarity(anchor_embeddings, negative_embeddings, dim=1)
+    elif metric == 'square_dist':
+      anchor_positive_similarity = square_dist(anchor_embeddings, positive_embeddings)
+      anchor_negative_similarity = square_dist(anchor_embeddings, negative_embeddings)
+      
+    # Plot the histograms
+    plt.figure(figsize=(10, 6))
+
+    # Plot for anchor-positive distances (blue)
+    plt.hist(anchor_positive_similarity.numpy(), bins=30, alpha=0.5, label='Anchor-Positive', color='blue')
+
+    # Plot for anchor-negative distances (red)
+    plt.hist(anchor_negative_similarity.numpy(), bins=30, alpha=0.5, label='Anchor-Negative', color='red')
+
+    # Add labels and title
+    # Add labels and title
+    plt.xlabel('Distance')
+    plt.ylabel('Frequency')
+    plt.title(f'Histogram of Anchor-Positive and Anchor-Negative Distances ({metric.capitalize()} Metric)')
+    plt.legend()
+
+    # Save the plot
+    os.makedirs(output_folder, exist_ok=True)  # Ensure output directory exists
+    output_path = os.path.join(output_folder, f"histogram_{metric}.png")
+    plt.savefig(output_path)
+    plt.close()  # Close the plot to free memory
