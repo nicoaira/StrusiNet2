@@ -2,7 +2,7 @@ import torch.nn as nn
 from torch_geometric.nn import GINConv, Set2Set
 
 class GINModel(nn.Module):
-    def __init__(self, graph_encoding, hidden_dim, output_dim, dropout=0.1):
+    def __init__(self, hidden_dim, output_dim, graph_encoding = "allocator", dropout=0.1):
         super(GINModel, self).__init__()
 
         input_dim = 1 if graph_encoding == "allocator" else 7

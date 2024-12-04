@@ -9,6 +9,7 @@ from torch.utils.data import DataLoader as TorchDataLoader
 from src.embedding_evaluation.utils import save_model_histograms
 from src.gin_rna_dataset import GINRNADataset
 from src.model.gin_model_2_layers import GINModel2Layers
+from src.model.gin_model_3_layers import GINModel3Layers
 from src.model.gin_model_single_layer import GINModel
 from src.model.siamese_model import SiameseResNetLSTM
 from src.triplet_rna_dataset import TripletRNADataset
@@ -33,6 +34,9 @@ def load_trained_model(model_path, model_type="siamese", graph_encoding="allocat
     elif model_type == "gin_2":
         model = GINModel2Layers(hidden_dim=256, output_dim=128)
 
+    elif model_type == "gin_3":
+        model = GINModel3Layers(hidden_dim=256, output_dim=128)
+
     # Load the checkpoint that contains multiple states (epoch, optimizer, and model state_dict)
     checkpoint = torch.load(model_path, map_location=device, weights_only=True)
 
@@ -54,11 +58,7 @@ def get_dataset_loader(model_type,val_df):
         val_dataset = TripletRNADataset(val_df, max_len=max_len)
         val_loader = TorchDataLoader(val_dataset, batch_size=4, shuffle=False, pin_memory=True)
 
-    elif model_type == "gin_1":
-        val_dataset = GINRNADataset(val_df)
-        val_loader = GeoDataLoader(val_dataset, batch_size=4, shuffle=False, pin_memory=True)
-    
-    elif model_type == "gin_2":
+    elif "gin_" in model_type:
         val_dataset = GINRNADataset(val_df)
         val_loader = GeoDataLoader(val_dataset, batch_size=4, shuffle=False, pin_memory=True)
 

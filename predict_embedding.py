@@ -8,6 +8,7 @@ import argparse
 from src.model.siamese_model import SiameseResNetLSTM
 from src.model.gin_model_single_layer import GINModel
 from src.model.gin_model_2_layers import GINModel2Layers
+from src.model.gin_model_3_layers import GINModel3Layers
 from src.utils import dotbracket_to_forgi_graph, forgi_graph_to_tensor, pad_and_convert_to_contact_matrix, dotbracket_to_graph, graph_to_tensor
 import os
 import subprocess
@@ -40,6 +41,9 @@ def load_trained_model(model_path, model_type="siamese", graph_encoding="allocat
 
     elif model_type == "gin_2":
         model = GINModel2Layers(hidden_dim=256, output_dim=128)
+    
+    elif model_type == "gin_3":
+        model = GINModel3Layers(hidden_dim=256, output_dim=128)
 
     # Load the checkpoint that contains multiple states (epoch, optimizer, and model state_dict)
     checkpoint = torch.load(model_path, map_location=device, weights_only=True)
@@ -136,7 +140,7 @@ def generate_embeddings(input, output, samples, model_type, model_path, structur
             if model_type == "siamese":
                 embedding = get_siamese_embedding(
                     model, structure, max_len, device=device)
-            elif model_type == "gin_1" or model_type == "gin_2":
+            elif "gin_" in model_type:
                 embedding = get_gin_embedding(model, graph_encoding, structure)
 
             # Convert list to comma-separated string
@@ -171,7 +175,7 @@ if __name__ == "__main__":
                         help=f'Path to the trained model file (default: {default_model_path}).')
 
     parser.add_argument('--model_type', type=str, choices=[
-                        'siamese', 'gin_1', 'gin_2'], default='siamese', help='Model type to run (e.g., "siamese" or "gin").')
+                        'siamese', 'gin_1', 'gin_2','gin_3'], default='siamese', help='Model type to run (e.g., "siamese" or "gin").')
 
     parser.add_argument('--graph_encoding', type=str, choices=['allocator', 'forgi'], default='allocator',
                         help='Encoding to use for the transformation to graph. Only used in case of gin modeling')
