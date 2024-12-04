@@ -82,27 +82,28 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="")
     parser.add_argument('--predict_embedding_path', type=str, required=True)
     parser.add_argument('--output_name', default = "output", type=str)
-    parser.add_argument('--sample_num', default = 10000, type=int)
+    parser.add_argument('--sample_num', type=int)
     args = parser.parse_args()
 
 
     df = pd.read_csv(args.predict_embedding_path, sep="\t")
 
-    random_indices = random.sample(range(len(df)), args.sample_num)
-    df_random_sample = df.iloc[random_indices].copy()
+    if args.sample_num:
+        random_indices = random.sample(range(len(df)), args.sample_num)
+        df = df.iloc[random_indices].copy()
 
-    embedding_tsne = project_embeddings(df_random_sample)
+    embedding_tsne = project_embeddings(df)
 
     output_folder = f"output/{args.output_name}"
     os.makedirs(output_folder, exist_ok=True)
-    save_scatter_2d(output_folder, df_random_sample, embedding_tsne, column = 'rfam')
-    save_scatter_2d(output_folder, df_random_sample, embedding_tsne, column = 'rna_type')
+    save_scatter_2d(output_folder, df, embedding_tsne, column = 'rfam')
+    save_scatter_2d(output_folder, df, embedding_tsne, column = 'rna_type')
 
-    df_random_sample['tSNE_1'] = embedding_tsne[:, 0]
-    df_random_sample['tSNE_2'] = embedding_tsne[:, 1]
-    df_random_sample['tSNE_3'] = embedding_tsne[:, 2]
+    df['tSNE_1'] = embedding_tsne[:, 0]
+    df['tSNE_2'] = embedding_tsne[:, 1]
+    df['tSNE_3'] = embedding_tsne[:, 2]
     
     projected_embeddings_path = f"{output_folder}/projected_embeddings.csv"
-    df_random_sample.to_csv(projected_embeddings_path)
+    df.to_csv(projected_embeddings_path)
     print(f"Saved projections to {projected_embeddings_path}")
     
