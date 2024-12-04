@@ -1,4 +1,5 @@
 import argparse
+import random
 import torch
 import pandas as pd
 import torch
@@ -69,14 +70,29 @@ if __name__ == "__main__":
     parser.add_argument('--output_name', default = "output", type=str)
     parser.add_argument('--model_type', default ="gin_1", type=str)
     parser.add_argument('--val_dataset_path', default ="example_data/val_dataset.csv", type=str)
+    parser.add_argument('--sample_num', type=int)
     args = parser.parse_args()
 
 
     val_df = pd.read_csv(args.val_dataset_path)
     val_df = remove_invalid_structures(val_df)
-    batch_size = 16
-    val_dataset = GINRNADataset(val_df)
-    val_loader = GeoDataLoader(val_dataset, batch_size=batch_size, shuffle=False, pin_memory=True)
+
+    if args.sample_num:
+        random_indices = random.sample(range(len(val_df)), args.sample_num)
+        val_df = val_df.iloc[random_indices].copy()
+
+    if args.model_type == "siamese":
+        max_len = max(
+            max(val_df['structure_A'].str.len()),
+            max(val_df['structure_P'].str.len()),
+            max(val_df['structure_N'].str.len())
+        )
+        val_dataset = TripletRNADataset(val_df, max_len=max_len)
+        val_loader = TorchDataLoader(val_dataset, batch_size=4, shuffle=False, pin_memory=True)
+    else:
+        val_dataset = GINRNADataset(val_df)
+        val_loader = GeoDataLoader(val_dataset, batch_size=16, shuffle=False, pin_memory=True)
+    
     model = load_trained_model(args.model_path, args.model_type)
     save_model_histograms(model, val_loader, args.output_name)
 
