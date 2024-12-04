@@ -98,4 +98,11 @@ if __name__ == "__main__":
     save_scatter_2d(output_folder, df_random_sample, embedding_tsne, column = 'rfam')
     save_scatter_2d(output_folder, df_random_sample, embedding_tsne, column = 'rna_type')
 
+    df_random_sample['tSNE_1'] = embedding_tsne[:, 0]
+    df_random_sample['tSNE_2'] = embedding_tsne[:, 1]
+    df_random_sample['tSNE_3'] = embedding_tsne[:, 2]
+    
+    projected_embeddings_path = f"{output_folder}/projected_embeddings.csv"
+    df_random_sample.to_csv(projected_embeddings_path)
+    print(f"Saved projections to {projected_embeddings_path}")
     
