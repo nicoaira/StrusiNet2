@@ -1,0 +1,114 @@
+{
+    "primary_sampled_datasets": [
+        {
+            "name": "unpaired_rnas_rfam_benchmark",
+            "created_at": "2024-12-12 19:41:39",
+            "rows_sampled": 7922,
+            "random_seed": 42,
+            "filename": "unpaired_rnas_rfam_benchmark-v1.tsv",
+            "unique_id": "1ed348cc",
+            "version": 1
+        }
+    ],
+    "benchmark_datasets": [
+        {
+            "name": "rna_type_benchmark_small",
+            "id": "b9610e3f",
+            "filename": "rna_type_benchmark_small-v1.tsv",
+            "target": "same_rna_type",
+            "n_pairs": 50,
+            "version": 1,
+            "description": "Small benchmark dataset for RNA type classification.",
+            "created_at": "2024-12-12 19:42:12",
+            "primary_sampled_dataset_id": "1ed348cc"
+        },
+        {
+            "name": "rna_type_benchmark",
+            "id": "456dd567",
+            "filename": "rna_type_benchmark-v2.tsv",
+            "target": "same_rna_type",
+            "n_pairs": 1000,
+            "version": 2,
+            "description": "Medium size benchmark dataset for RNA type classification.",
+            "created_at": "2024-12-12 19:42:28",
+            "primary_sampled_dataset_id": "1ed348cc"
+        },
+        {
+            "name": "rna_type_benchmark_big",
+            "id": "e3bf8f6f",
+            "filename": "rna_type_benchmark_big-v1.tsv",
+            "target": "same_rna_type",
+            "n_pairs": 15000,
+            "version": 1,
+            "description": "Big benchmark dataset for RNA type classification.",
+            "created_at": "2024-12-12 19:42:46",
+            "primary_sampled_dataset_id": "1ed348cc"
+        },
+        {
+            "name": "easy_rfam_benchmark_small",
+            "id": "9af01ca3",
+            "filename": "easy_rfam_benchmark_small-v1.tsv",
+            "target": "same_rfam",
+            "n_pairs": 50,
+            "version": 1,
+            "description": "Small Benchmark dataset for easy RFAM classification. Negative pairs correspond to different RNA Types.",
+            "created_at": "2024-12-12 19:43:04",
+            "primary_sampled_dataset_id": "1ed348cc"
+        },
+        {
+            "name": "easy_rfam_benchmark",
+            "id": "e4a490bc",
+            "filename": "easy_rfam_benchmark-v2.tsv",
+            "target": "same_rfam",
+            "n_pairs": 1000,
+            "version": 2,
+            "description": "Benchmark dataset for easy RFAM classification. Negative pairs correspond to different RNA Types.",
+            "created_at": "2024-12-12 19:43:20",
+            "primary_sampled_dataset_id": "1ed348cc"
+        },
+        {
+            "name": "easy_rfam_benchmark_big",
+            "id": "681161da",
+            "filename": "easy_rfam_benchmark_big-v1.tsv",
+            "target": "same_rfam",
+            "n_pairs": 15000,
+            "version": 1,
+            "description": "Big benchmark dataset for easy RFAM classification. Negative pairs correspond to different RNA Types.",
+            "created_at": "2024-12-12 19:43:38",
+            "primary_sampled_dataset_id": "1ed348cc"
+        },
+        {
+            "name": "hard_rfam_benchmark_small",
+            "id": "852d02eb",
+            "filename": "hard_rfam_benchmark_small-v1.tsv",
+            "target": "same_rfam",
+            "n_pairs": 50,
+            "version": 1,
+            "description": "Small Benchmark dataset for hard RFAM classification. Negative pairs correspond to same RNA Types.",
+            "created_at": "2024-12-12 19:43:54",
+            "primary_sampled_dataset_id": "1ed348cc"
+        },
+        {
+            "name": "hard_rfam_benchmark",
+            "id": "3c0155ba",
+            "filename": "hard_rfam_benchmark-v2.tsv",
+            "target": "same_rfam",
+            "n_pairs": 1000,
+            "version": 2,
+            "description": "Benchmark dataset for hard RFAM classification. Negative pairs correspond to same RNA Types.",
+            "created_at": "2024-12-12 19:44:09",
+            "primary_sampled_dataset_id": "1ed348cc"
+        },
+        {
+            "name": "hard_rfam_benchmark_big",
+            "id": "c3ccb0bb",
+            "filename": "hard_rfam_benchmark_big-v1.tsv",
+            "target": "same_rfam",
+            "n_pairs": 15000,
+            "version": 1,
+            "description": "Big benchmark dataset for hard RFAM classification. Negative pairs correspond to same RNA Types.",
+            "created_at": "2024-12-12 19:44:25",
+            "primary_sampled_dataset_id": "1ed348cc"
+        }
+    ]
+}
