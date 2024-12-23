@@ -83,7 +83,8 @@ structures, sequences = parallel_structure_generation(
     num_structures=params.num_structures,
     num_workers=params.num_workers,
     seq_min_len=params.seq_min_len,
-    seq_max_len=params.seq_max_len
+    seq_max_len=params.seq_max_len,
+    results_dir=params.results_dir  # New parameter for specifying the results directory
 )
 ```
 

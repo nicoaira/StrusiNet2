@@ -8,4 +8,4 @@ output/
 *.ipynb
 *.csv
 *.json
-*_plots/
+plots/

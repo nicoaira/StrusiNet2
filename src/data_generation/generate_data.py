@@ -22,9 +22,10 @@ def generate_metadata(args):
     
     return metadata
 
-def save_with_metadata(df, metadata, out_file):
+def save_with_metadata(df, metadata, results_dir):
     """Save CSV with metadata header and separate metadata file"""
-    base_path = os.path.splitext(out_file)[0]
+    os.makedirs(results_dir, exist_ok=True)
+    base_path = os.path.join(results_dir, 'results')
     metadata_file = f"{base_path}_metadata.json"
     
     with open(metadata_file, 'w') as f:
@@ -32,6 +33,7 @@ def save_with_metadata(df, metadata, out_file):
     
     header_comment = f"# Run ID: {metadata['run_id']}\n# Generated: {metadata['timestamp']}\n"
     
+    out_file = f"{base_path}.csv"
     with open(out_file, 'w') as f:
         f.write(header_comment)
         df.to_csv(f, index=False)
@@ -89,7 +91,7 @@ def main():
     # Performance parameters
     perf_group = parser.add_argument_group('Performance')
     perf_group.add_argument('--num_workers', type=int, default=16, help='Number of parallel workers')
-    perf_group.add_argument('--out_file', type=str, default='dot_bracket_dummy_RNPs_triplets_240913.csv', help='Output file path')
+    perf_group.add_argument('--results_dir', type=str, required=True, help='Directory to save output files')
 
     # Add visualization parameters
     vis_group = parser.add_argument_group('Visualization')
@@ -140,15 +142,15 @@ def main():
     df[['structure_A', 'structure_P', 'structure_N']] = pd.DataFrame(structure_triplets)
     df[['sequence_A', 'sequence_P', 'sequence_N']] = pd.DataFrame(sequence_triplets)
 
-    save_with_metadata(df, metadata, args.out_file)
+    save_with_metadata(df, metadata, args.results_dir)
     
     # Plot structures if requested
     if args.plot_structures:
-        plot_dir = f"{os.path.splitext(args.out_file)[0]}_plots"
-        os.makedirs(plot_dir, exist_ok=True)
-        plot_triplets(df, plot_dir, num_samples=args.num_plots)
+        plots_dir = os.path.join(args.results_dir, 'plots')
+        os.makedirs(plots_dir, exist_ok=True)
+        plot_triplets(df, plots_dir, num_samples=args.num_plots)
 
-    print(f"Created {args.out_file} and corresponding metadata file")
+    print(f"Results saved in {args.results_dir}")
 
 if __name__ == "__main__":
     main()
