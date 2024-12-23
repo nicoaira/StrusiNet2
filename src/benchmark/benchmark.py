@@ -60,6 +60,9 @@ def get_embeddings(model_script,
                    sampled_rnas_path,
                    emb_output_path,
                    model_weights_path,
+                   model_type,
+                   gin_layers,
+                   graph_encoding,
                    structure_column_name,
                    structure_column_num,
                    header):
@@ -76,6 +79,12 @@ def get_embeddings(model_script,
         Path where the embeddings output file will be saved.
     model_weights_path : str
         Path to the model weights.
+    model_type: str
+        Model that's being evaluated: siamese or gin
+    gin_layers: int
+        Optional number of gin layers.
+    graph_encoding: str
+        Type of gin encoding, forgi or allocator
     structure_column_name : str
         Name of the column containing RNA secondary structures, if provided.
     structure_column_num : int
@@ -100,9 +109,16 @@ def get_embeddings(model_script,
         "--input", sampled_rnas_path,
         "--output", emb_output_path,
         "--model_path", model_weights_path,
+        "--model_type", model_type,
         "--device", device,
         "--header", str(header)
     ]
+
+    if gin_layers is not None:
+        command.extend(["--gin_layers", str(gin_layers)])
+    
+    if graph_encoding is not None:
+        command.extend(["--graph_encoding", graph_encoding])
 
     if structure_column_name:
         command.extend(["--structure_column_name", structure_column_name])
@@ -262,7 +278,8 @@ def get_distances(embedding_dict,
         benchmark_w_dist_path = os.path.join(benchmarking_results_path, benchmark_w_dist_file)
         benchmark_df.to_csv(benchmark_w_dist_path, sep='\t', index=False)
 
-    return benchmark_df
+    #return benchmark_df
+    return benchmark_df[benchmark_df.square_distance.notna()]
 
 def get_roc_auc(benchmark_name, benchmark_version,
                 benchmark_df, target,
@@ -520,6 +537,9 @@ def run_benchmark(model_script,
                   save_embeddings,
                   emb_output_path,
                   model_weights_path,
+                  model_type,
+                  gin_layers,
+                  graph_encoding,
                   structure_column_name,
                   structure_column_num,
                   header,
@@ -659,6 +679,9 @@ def run_benchmark(model_script,
             sampled_rnas_path=embedding_input_path,
             emb_output_path=curr_emb_output_path,
             model_weights_path=model_weights_path,
+            model_type=model_type,
+            gin_layers=gin_layers,
+            graph_encoding=graph_encoding,
             structure_column_name=structure_column_name,
             structure_column_num=structure_column_num,
             header=header
@@ -759,11 +782,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate embeddings from RNA secondary structures using a trained model and benchmark them.")
 
     parser.add_argument('--model-script', dest='model_script', type=str, 
-                        default="./strusinet.py",
-                        help='Path to the model script. Default: "./strusinet.py".')
+                        default="./predict_embedding.py",
+                        help='Path to the model script. Default: "./predict_embedding.py".')
 
     parser.add_argument('--benchmark-metadata', dest='benchmark_metadata_path', type=str,
-                        default='benchmarking_datasets.json',
+                        default='benchmark_datasets.json',
                         help="Name of the JSON file containing benchmark dataset information (in --datasets-dir). Default: 'benchmarking_datasets.json'")
 
     parser.add_argument('--datasets-dir', dest='datasets_dir', type=str,
@@ -816,6 +839,12 @@ if __name__ == "__main__":
 
     parser.add_argument('--no-log', dest='no_log', action='store_true',
                         help='If set, no log file will be created.')
+    
+    parser.add_argument('--model_type', type=str, default='siamese', required=True, choices=['siamese', 'gin_1','gin_2','gin_3', 'gin'], help="Type of model to use: 'siamese' or 'gin'.")
+    
+    parser.add_argument('--gin_layers', type=int, help='Number of gin layers.')
+
+    parser.add_argument('--graph_encoding', type=str, choices=['allocator', 'forgi'], default='allocator', help='Encoding to use for the transformation to graph. Only used in case of gin modeling')
 
     args = parser.parse_args()
 
@@ -851,7 +880,10 @@ if __name__ == "__main__":
         datasets_dir=args.datasets_dir,
         save_embeddings=args.save_embeddings,
         emb_output_path=args.emb_output_path,
-        model_weights_path=args.model_path, 
+        model_weights_path=args.model_path,
+        model_type=args.model_type,
+        gin_layers=args.gin_layers,
+        graph_encoding=args.graph_encoding,
         structure_column_name=args.structure_column_name, 
         structure_column_num=args.structure_column_num,
         header=args.header,

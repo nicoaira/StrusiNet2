@@ -5,6 +5,7 @@ import torch
 import pandas as pd
 from tqdm import tqdm
 import argparse
+from src.model.gin_model import GINModelGeneral
 from src.model.siamese_model import SiameseResNetLSTM
 from src.model.gin_model_single_layer import GINModel
 from src.model.gin_model_2_layers import GINModel2Layers
@@ -17,7 +18,7 @@ from pathlib import Path
 # Load the trained model
 
 
-def load_trained_model(model_path, model_type="siamese", graph_encoding="allocator", hidden_dim=256, lstm_layers=1, device='cpu'):
+def load_trained_model(model_path, model_type="siamese", graph_encoding="allocator", hidden_dim=256, lstm_layers=1, device='cpu', gin_layers = 1):
     # Check if the model file exists, if not provide instruction to download it
     if not os.path.exists(model_path):
         print(f"Model file not found at {
@@ -44,6 +45,9 @@ def load_trained_model(model_path, model_type="siamese", graph_encoding="allocat
     
     elif model_type == "gin_3":
         model = GINModel3Layers(hidden_dim=256, output_dim=128)
+    
+    elif model_type == "gin":
+        model = GINModelGeneral(hidden_dim=256, output_dim=128, graph_encoding=graph_encoding, gin_layers = gin_layers)
 
     # Load the checkpoint that contains multiple states (epoch, optimizer, and model state_dict)
     checkpoint = torch.load(model_path, map_location=device, weights_only=True)
@@ -98,10 +102,10 @@ def validate_structure(structure):
 # Main function to generate embeddings from CSV or TSV
 
 
-def generate_embeddings(input, output, samples, model_type, model_path, structure_column_name='secondary_structure', structure_column_num=None, max_len=641, device='cpu', header=True, graph_encoding='allocator'):
+def generate_embeddings(input, output_path, samples, model_type, model_path, structure_column_name='secondary_structure', structure_column_num=None, max_len=641, device='cpu', header=True, graph_encoding='allocator', gin_layers=1):
     # Load the trained model
     model = load_trained_model(
-        model_path, model_type, graph_encoding, device=device)
+        model_path, model_type, graph_encoding, device=device, gin_layers= gin_layers)
 
     # Determine delimiter based on file extension
     delimiter = '\t' if input.endswith('.tsv') else ','
@@ -140,7 +144,7 @@ def generate_embeddings(input, output, samples, model_type, model_path, structur
             if model_type == "siamese":
                 embedding = get_siamese_embedding(
                     model, structure, max_len, device=device)
-            elif "gin_" in model_type:
+            elif "gin" in model_type:
                 embedding = get_gin_embedding(model, graph_encoding, structure)
 
             # Convert list to comma-separated string
@@ -149,7 +153,6 @@ def generate_embeddings(input, output, samples, model_type, model_path, structur
     # Add the embeddings to the DataFrame
     df['embedding_vector'] = embeddings
 
-    output_path = f"output/{output}/{output}_embeddings.tsv"
     # Save the output TSV
     df.to_csv(output_path, sep='\t', index=False)
     print(f"Embeddings saved to {output_path}")
@@ -161,8 +164,9 @@ if __name__ == "__main__":
                         help='Path to the input CSV/TSV file containing RNA secondary structures.')
     parser.add_argument('--samples', type=int)
     
-    parser.add_argument('--output_name', type=str, required=True,
-                        help='Output name')
+    parser.add_argument('--output', type=str, help='Output path of the embedding')
+    parser.add_argument('--output_name', type=str, help='If output path not defined, store in output/{output_name}/{output_name}_embedding.tsv')
+    
     parser.add_argument('--structure_column_name', type=str,
                         help='Name of the column with the RNA secondary structures.')
     parser.add_argument('--structure_column_num', type=int,
@@ -175,7 +179,9 @@ if __name__ == "__main__":
                         help=f'Path to the trained model file (default: {default_model_path}).')
 
     parser.add_argument('--model_type', type=str, choices=[
-                        'siamese', 'gin_1', 'gin_2','gin_3'], default='siamese', help='Model type to run (e.g., "siamese" or "gin").')
+                        'siamese', 'gin_1', 'gin_2','gin_3', 'gin'], default='siamese', help='Model type to run (e.g., "siamese" or "gin").')
+
+    parser.add_argument('--gin_layers', type=int, default=1, help='Number of gin layers.')
 
     parser.add_argument('--graph_encoding', type=str, choices=['allocator', 'forgi'], default='allocator',
                         help='Encoding to use for the transformation to graph. Only used in case of gin modeling')
@@ -192,10 +198,19 @@ if __name__ == "__main__":
             "Invalid value for --header. Please use 'True' or 'False'.")
     args.header = args.header.lower() == 'true'
 
+    if args.output:
+        output_path = args.output
+    elif args.output_name:
+        output_path = f"output/{args.output_name}/{args.output_name}_embeddings.tsv"
+    else:
+        raise "Either output path or output name must be defined"
+    
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
     # Generate embeddings
     generate_embeddings(
         args.input,
-        args.output_name,
+        output_path,
         args.samples,
         args.model_type,
         args.model_path,
@@ -203,5 +218,6 @@ if __name__ == "__main__":
         structure_column_num=args.structure_column_num,
         device=args.device,
         header=args.header,
-        graph_encoding=args.graph_encoding
+        graph_encoding=args.graph_encoding,
+        gin_layers=args.gin_layers
     )

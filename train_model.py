@@ -189,7 +189,7 @@ def main():
         val_loader = GeoDataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, pin_memory=True)
 
     elif args.model_type == "gin":
-        model = GINModelGeneral(hidden_dim=args.hidden_dim, output_dim=args.output_dim, gin_layers = args.gin_layers)
+        model = GINModelGeneral(hidden_dim=args.hidden_dim, output_dim=args.output_dim, graph_encoding=args.graph_encoding, gin_layers = args.gin_layers)
         train_dataset = GINRNADataset(train_df, graph_encoding=args.graph_encoding)
         val_dataset = GINRNADataset(val_df, graph_encoding=args.graph_encoding)
         train_loader = GeoDataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, pin_memory=True)
