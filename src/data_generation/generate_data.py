@@ -5,6 +5,7 @@ from datetime import datetime
 import uuid
 import os
 from data_generation_utils import parallel_structure_generation
+from data_generation_utils import plot_triplets
 
 def generate_metadata(args):
     """Generate metadata dictionary with all parameters and run info"""
@@ -90,6 +91,13 @@ def main():
     perf_group.add_argument('--num_workers', type=int, default=16, help='Number of parallel workers')
     perf_group.add_argument('--out_file', type=str, default='dot_bracket_dummy_RNPs_triplets_240913.csv', help='Output file path')
 
+    # Add visualization parameters
+    vis_group = parser.add_argument_group('Visualization')
+    vis_group.add_argument('--plot_structures', action='store_true', default=False,
+                          help='Generate structure plots')
+    vis_group.add_argument('--num_plots', type=int, default=5,
+                          help='Number of structure triplets to plot')
+    
     args = parser.parse_args()
 
     # Generate metadata
@@ -133,6 +141,13 @@ def main():
     df[['sequence_A', 'sequence_P', 'sequence_N']] = pd.DataFrame(sequence_triplets)
 
     save_with_metadata(df, metadata, args.out_file)
+    
+    # Plot structures if requested
+    if args.plot_structures:
+        plot_dir = f"{os.path.splitext(args.out_file)[0]}_plots"
+        os.makedirs(plot_dir, exist_ok=True)
+        plot_triplets(df, plot_dir, num_samples=args.num_plots)
+
     print(f"Created {args.out_file} and corresponding metadata file")
 
 if __name__ == "__main__":
