@@ -7,5 +7,7 @@ output/
 .DS_Store
 *.ipynb
 *.csv
+*.tsv
 *.json
 plots/
+data/*
