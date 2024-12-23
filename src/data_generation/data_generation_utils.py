@@ -5,6 +5,11 @@ import math
 import igraph as ig
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from tqdm import tqdm
+import tempfile
+import random
+import matplotlib.pyplot as plt
+import forgi.visual.mplotlib as fvm
+import os
 
 def update_nodes_dict(dot_bracket_mapper, nodes_dict):
 
@@ -900,3 +905,62 @@ def parallel_structure_generation(num_structures, num_workers, seq_min_len, seq_
 
     print(f'\n{num_structures} structure pairs generated')
     return structure_triplets, sequence_triplets
+
+def plot_rna_structure(ax, sequence, structure, structure_name):
+    """Plot single RNA structure on given axis"""
+    try:
+        with tempfile.NamedTemporaryFile(mode='w+t', delete=False) as temp_file:
+            temp_file.write('>' + structure_name + '\n')
+            temp_file.write(sequence + '\n')
+            temp_file.write(structure + '\n')
+            temp_file.flush()
+            temp_file.seek(0)
+
+            cg = forgi.load_rna(temp_file.name, allow_many=False)
+            
+            fvm.plot_rna(cg, text_kwargs={"fontweight":"black"}, lighten=0.7,
+                        backbone_kwargs={"linewidth":3}, ax=ax)
+            ax.set_title(structure_name)
+            return True
+    except Exception as e:
+        print(f"Warning: Failed to plot structure {structure_name}: {str(e)}")
+        return False
+
+def plot_triplets(df, plot_dir, num_samples=5):
+    """Generate plots for structure triplets with error handling and retries"""
+    successful_plots = 0
+    attempted_indices = set()
+    max_attempts = min(df.shape[0], num_samples * 3)  # Limit attempts
+    
+    with tqdm(total=num_samples, desc="Plotting triplets") as pbar:
+        while successful_plots < num_samples and len(attempted_indices) < max_attempts:
+            # Get random index that hasn't been tried yet
+            available_indices = set(range(df.shape[0])) - attempted_indices
+            if not available_indices:
+                print("Ran out of triplets to try plotting")
+                break
+                
+            sample_idx = random.choice(list(available_indices))
+            attempted_indices.add(sample_idx)
+            
+            # Try to plot all three structures in triplet
+            try:
+                fig, axs = plt.subplots(1, 3, figsize=(24, 8))
+                success_A = plot_rna_structure(axs[0], df.iloc[sample_idx]['sequence_A'], df.iloc[sample_idx]['structure_A'], "Anchor")
+                success_P = plot_rna_structure(axs[1], df.iloc[sample_idx]['sequence_P'], df.iloc[sample_idx]['structure_P'], "Positive")
+                success_N = plot_rna_structure(axs[2], df.iloc[sample_idx]['sequence_N'], df.iloc[sample_idx]['structure_N'], "Negative")
+                
+                if success_A and success_P and success_N:
+                    out_file = os.path.join(plot_dir, f'triplet_{sample_idx}.png')
+                    plt.savefig(out_file)
+                    plt.close()
+                    successful_plots += 1
+                    pbar.update(1)
+                else:
+                    plt.close()
+            except Exception as e:
+                plt.close()
+                continue
+            
+    if successful_plots < num_samples:
+        print(f"Warning: Only managed to plot {successful_plots}/{num_samples} requested triplets")
