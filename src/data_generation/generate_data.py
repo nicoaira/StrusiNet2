@@ -4,8 +4,7 @@ import json
 from datetime import datetime
 import uuid
 import os
-from data_generation_utils import parallel_structure_generation
-from data_generation_utils import plot_triplets
+from data_generation_utils import parallel_structure_generation, plot_triplets, split_dataset
 
 def generate_metadata(args):
     """Generate metadata dictionary with all parameters and run info"""
@@ -99,11 +98,31 @@ def main():
                           help='Generate structure plots')
     vis_group.add_argument('--num_plots', type=int, default=5,
                           help='Number of structure triplets to plot')
+
+    # Add dataset splitting parameters
+    split_group = parser.add_argument_group('Dataset Splitting')
+    split_group.add_argument('--split', action='store_true', default=False, help='Enable dataset splitting')
+    split_group.add_argument('--train_fraction', type=float, default=0.8, help='Fraction of data for training')
+    split_group.add_argument('--val_fraction', type=float, default=0.2, help='Fraction of data for validation')
     
     args = parser.parse_args()
+    
+    # Handle train/val fraction calculations
+    if args.split:
+        if args.train_fraction is None and args.val_fraction is None:
+            args.train_fraction = 0.8
+            args.val_fraction = 0.2
+        elif args.train_fraction is None:
+            args.train_fraction = 1.0 - args.val_fraction
+        elif args.val_fraction is None:
+            args.val_fraction = 1.0 - args.train_fraction
+            
+        if abs(args.train_fraction + args.val_fraction - 1.0) > 1e-6:
+            raise ValueError("Train and validation fractions must sum to 1.0")
 
     # Generate metadata
     metadata = generate_metadata(args)
+    # Remove the redundant data_split field - it's already in parameters
 
     structure_triplets, sequence_triplets = parallel_structure_generation(
         num_structures=args.num_structures,
@@ -142,13 +161,51 @@ def main():
     df[['structure_A', 'structure_P', 'structure_N']] = pd.DataFrame(structure_triplets)
     df[['sequence_A', 'sequence_P', 'sequence_N']] = pd.DataFrame(sequence_triplets)
 
-    save_with_metadata(df, metadata, args.results_dir)
+    # Add unique ID to each row
+    df.insert(0, 'id', range(1, len(df) + 1))
+
+    os.makedirs(args.results_dir, exist_ok=True)
+    base_path = os.path.join(args.results_dir, 'triplets_dataset')
+    metadata_file = f"{base_path}_metadata.json"
     
-    # Plot structures if requested
-    if args.plot_structures:
-        plots_dir = os.path.join(args.results_dir, 'plots')
-        os.makedirs(plots_dir, exist_ok=True)
-        plot_triplets(df, plots_dir, num_samples=args.num_plots)
+    with open(metadata_file, 'w') as f:
+        json.dump(metadata, f, indent=2)
+
+    # Create header comment for CSV files
+    header_comment = f"# Run ID: {metadata['run_id']}\n# Generated: {metadata['timestamp']}\n"
+
+    if args.split:
+        train_df, val_df = split_dataset(df, args.train_fraction, args.val_fraction)
+        
+        # Save train file with header comment
+        with open(f"{base_path}_train.csv", 'w') as f:
+            f.write(header_comment)
+            train_df.to_csv(f, index=False)
+            
+        # Save validation file with header comment
+        with open(f"{base_path}_val.csv", 'w') as f:
+            f.write(header_comment)
+            val_df.to_csv(f, index=False)
+        
+        # Plot structures if requested
+        if args.plot_structures:
+            train_plots_dir = os.path.join(args.results_dir, 'plots', 'train')
+            val_plots_dir = os.path.join(args.results_dir, 'plots', 'val')
+            os.makedirs(train_plots_dir, exist_ok=True)
+            os.makedirs(val_plots_dir, exist_ok=True)
+            plot_triplets(train_df, train_plots_dir, num_samples=args.num_plots)
+            plot_triplets(val_df, val_plots_dir, num_samples=args.num_plots)
+    else:
+        # Save single file with header comment
+        with open(f"{base_path}.csv", 'w') as f:
+            f.write(header_comment)
+            df.to_csv(f, index=False)
+        
+        # Plot structures if requested
+        if args.plot_structures:
+            plots_dir = os.path.join(args.results_dir, 'plots')
+            os.makedirs(plots_dir, exist_ok=True)
+            plot_triplets(df, plots_dir, num_samples=args.num_plots)
 
     print(f"Results saved in {args.results_dir}")
 
