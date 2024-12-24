@@ -11,3 +11,5 @@ output/
 *.json
 plots/
 data/*
+launch.json
+.vscode/
