@@ -8,9 +8,8 @@ from torch.utils.data import DataLoader as TorchDataLoader
 
 from src.embedding_evaluation.utils import save_model_histograms
 from src.gin_rna_dataset import GINRNADataset
-from src.model.gin_model_2_layers import GINModel2Layers
-from src.model.gin_model_3_layers import GINModel3Layers
-from src.model.gin_model_single_layer import GINModel
+from src.model.gin_model_single_layer import GINModelSingleLayer
+from src.model.gin_model import GINModel
 from src.model.siamese_model import SiameseResNetLSTM
 from src.triplet_rna_dataset import TripletRNADataset
 from src.utils import is_valid_dot_bracket
@@ -23,19 +22,26 @@ def remove_invalid_structures(df):
     )
     return df[valid_structures]
 
-def load_trained_model(model_path, model_type="siamese", graph_encoding="allocator", hidden_dim=256, lstm_layers=1, device='cpu'):
+def load_trained_model(
+        model_path,
+        model_type="siamese",
+        graph_encoding="allocator",
+        hidden_dim=256,
+        output_dim=128,
+        gin_layers=1,
+        lstm_layers=1,
+        device='cpu'
+    ):
     if model_type == "siamese":
         model = SiameseResNetLSTM(
             input_channels=1, hidden_dim=hidden_dim, lstm_layers=lstm_layers)
+
     elif model_type == "gin_1":
-        model = GINModel(graph_encoding=graph_encoding,
-                         hidden_dim=256, output_dim=128)
-
-    elif model_type == "gin_2":
-        model = GINModel2Layers(hidden_dim=256, output_dim=128)
-
-    elif model_type == "gin_3":
-        model = GINModel3Layers(hidden_dim=256, output_dim=128)
+        model = GINModelSingleLayer(graph_encoding=graph_encoding,
+                         hidden_dim=hidden_dim, output_dim=output_dim)
+    
+    elif model_type == "gin":
+        model = GINModel(hidden_dim=hidden_dim, output_dim=output_dim, graph_encoding=graph_encoding, gin_layers = gin_layers)
 
     # Load the checkpoint that contains multiple states (epoch, optimizer, and model state_dict)
     checkpoint = torch.load(model_path, map_location=device, weights_only=True)
@@ -68,9 +74,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="")
     parser.add_argument('--model_path', type=str, required=True)
     parser.add_argument('--output_name', default = "output", type=str)
-    parser.add_argument('--model_type', default ="gin_1", type=str)
+    parser.add_argument('--model_type', type=str, choices=["siamese", "gin_1", "gin"])
+    parser.add_argument('--graph_encoding', type=str, choices=['allocator', 'forgi'], default='allocator',
+                        help='Encoding to use for the transformation to graph. Only used in case of gin modeling')
+    parser.add_argument('--hidden_dim', type=int, default=256, help='Hidden dimension size for the model.')
+    parser.add_argument('--output_dim', type=int, default=128, help='Output embedding size for the GIN model (ignored for siamese).')
     parser.add_argument('--val_dataset_path', default ="example_data/val_dataset.csv", type=str)
     parser.add_argument('--sample_num', type=int)
+    parser.add_argument('--gin_layers', type=int)
     args = parser.parse_args()
 
 
@@ -90,10 +101,17 @@ if __name__ == "__main__":
         val_dataset = TripletRNADataset(val_df, max_len=max_len)
         val_loader = TorchDataLoader(val_dataset, batch_size=4, shuffle=False, pin_memory=True)
     else:
-        val_dataset = GINRNADataset(val_df)
+        val_dataset = GINRNADataset(val_df, graph_encoding=args.graph_encoding)
         val_loader = GeoDataLoader(val_dataset, batch_size=16, shuffle=False, pin_memory=True)
     
-    model = load_trained_model(args.model_path, args.model_type)
+    model = load_trained_model(
+        args.model_path,
+        args.model_type,
+        gin_layers=args.gin_layers,
+        graph_encoding=args.graph_encoding,
+        hidden_dim=args.hidden_dim,
+        output_dim=args.output_dim
+    )
     save_model_histograms(model, val_loader, args.output_name)
 
     

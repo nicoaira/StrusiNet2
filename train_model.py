@@ -9,10 +9,8 @@ import argparse
 from tqdm import tqdm
 from src.early_stopping import EarlyStopping
 from src.gin_rna_dataset import GINRNADataset
-from src.model.gin_model_single_layer import GINModel
-from src.model.gin_model_2_layers import GINModel2Layers
-from src.model.gin_model_3_layers import GINModel3Layers
-from src.model.gin_model import GINModelGeneral
+from src.model.gin_model_single_layer import GINModelSingleLayer
+from src.model.gin_model import GINModel
 from src.model.siamese_model import SiameseResNetLSTM
 from src.triplet_loss import TripletLoss
 from src.triplet_rna_dataset import TripletRNADataset
@@ -136,7 +134,7 @@ def main():
     parser = argparse.ArgumentParser(description="Generate embeddings from RNA secondary structures using a trained Siamese or GIN model.")
     parser.add_argument('--input_path', type=str, required=True, help='Path to the input CSV/TSV file containing RNA secondary structures.')
     parser.add_argument('--output_name', type=str, default='siamese_model', help='Output name')
-    parser.add_argument('--model_type', type=str, default='siamese', required=True, choices=['siamese', 'gin_1','gin_2','gin_3', 'gin'], help="Type of model to use: 'siamese' or 'gin'.")
+    parser.add_argument('--model_type', type=str, default='siamese', required=True, choices=['siamese', 'gin_1', 'gin'], help="Type of model to use: 'siamese' or 'gin'.")
     parser.add_argument('--graph_encoding', type=str, choices=['allocator', 'forgi'], default='allocator', help='Encoding to use for the transformation to graph. Only used in case of gin modeling')
     parser.add_argument('--hidden_dim', type=int, default=256, help='Hidden dimension size for the model.')
     parser.add_argument('--output_dim', type=int, default=128, help='Output embedding size for the GIN model (ignored for siamese).')
@@ -168,28 +166,14 @@ def main():
         val_loader = TorchDataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, pin_memory=True)
 
     elif args.model_type == "gin_1":
-        model = GINModel(graph_encoding=args.graph_encoding, hidden_dim=args.hidden_dim, output_dim=args.output_dim)
-        train_dataset = GINRNADataset(train_df, graph_encoding=args.graph_encoding)
-        val_dataset = GINRNADataset(val_df, graph_encoding=args.graph_encoding)
-        train_loader = GeoDataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, pin_memory=True)
-        val_loader = GeoDataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, pin_memory=True)
-    
-    elif args.model_type == "gin_2":
-        model = GINModel2Layers(hidden_dim=args.hidden_dim, output_dim=args.output_dim)
-        train_dataset = GINRNADataset(train_df, graph_encoding=args.graph_encoding)
-        val_dataset = GINRNADataset(val_df, graph_encoding=args.graph_encoding)
-        train_loader = GeoDataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, pin_memory=True)
-        val_loader = GeoDataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, pin_memory=True)
-    
-    elif args.model_type == "gin_3":
-        model = GINModel3Layers(hidden_dim=args.hidden_dim, output_dim=args.output_dim)
+        model = GINModelSingleLayer(graph_encoding=args.graph_encoding, hidden_dim=args.hidden_dim, output_dim=args.output_dim)
         train_dataset = GINRNADataset(train_df, graph_encoding=args.graph_encoding)
         val_dataset = GINRNADataset(val_df, graph_encoding=args.graph_encoding)
         train_loader = GeoDataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, pin_memory=True)
         val_loader = GeoDataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, pin_memory=True)
 
     elif args.model_type == "gin":
-        model = GINModelGeneral(hidden_dim=args.hidden_dim, output_dim=args.output_dim, gin_layers = args.gin_layers)
+        model = GINModel(hidden_dim=args.hidden_dim, output_dim=args.output_dim, graph_encoding=args.graph_encoding, gin_layers = args.gin_layers)
         train_dataset = GINRNADataset(train_df, graph_encoding=args.graph_encoding)
         val_dataset = GINRNADataset(val_df, graph_encoding=args.graph_encoding)
         train_loader = GeoDataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, pin_memory=True)
