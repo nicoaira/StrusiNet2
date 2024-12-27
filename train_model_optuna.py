@@ -7,11 +7,10 @@ from torch.utils.data import DataLoader as TorchDataLoader
 from sklearn.model_selection import train_test_split
 import pandas as pd
 from tqdm import tqdm
+from src.model.gin_model import GINModel
 from src.early_stopping import EarlyStopping
 from src.gin_rna_dataset import GINRNADataset
-from src.model.gin_model_single_layer import GINModel
-from src.model.gin_model_2_layers import GINModel2Layers
-from src.model.gin_model_3_layers import GINModel3Layers
+from src.model.gin_model_single_layer import GINModelSingleLayer
 from src.model.siamese_model import SiameseResNetLSTM
 from src.triplet_loss import TripletLoss
 from src.triplet_rna_dataset import TripletRNADataset
@@ -90,7 +89,9 @@ def train_model_with_early_stopping(
 def objective(trial):
     # Sample hyperparameters from the search space
     lr = trial.suggest_loguniform('lr', 1e-5, 1e-2)
-    hidden_dim = trial.suggest_int('hidden_dim', 128, 512)
+    hidden_dim = trial.suggest_int('hidden_dim', 128, 256, 512)
+    output_dim = trial.suggest_int('output_dim', 32, 64, 128)
+    gin_layers = trial.suggest_int('gin_layers', 1, 2, 3)
     batch_size = trial.suggest_categorical('batch_size', [8, 16, 32])
     num_epochs = trial.suggest_int('num_epochs', 5, 15)
     patience = trial.suggest_int('patience', 3, 7)
@@ -102,7 +103,8 @@ def objective(trial):
     train_df, val_df = train_test_split(df, test_size=0.2, random_state=42)
 
     # Choose the model type
-    model_type = 'siamese'  # or 'gin_1', 'gin_2', 'gin_3'
+    model_type = 'siamese'  # or 'gin_1', 'gin'
+    graph_encoding = 'allocator' # or 'forgi'
     
     # Instantiate model based on hyperparameters
     if model_type == "siamese":
@@ -111,12 +113,20 @@ def objective(trial):
         val_dataset = TripletRNADataset(val_df, max_len=max(df['structure_A'].str.len()))
         train_loader = TorchDataLoader(train_dataset, batch_size=batch_size, shuffle=True)
         val_loader = TorchDataLoader(val_dataset, batch_size=batch_size, shuffle=False)
-    else:
-        model = GINModel(graph_encoding='allocator', hidden_dim=hidden_dim, output_dim=128)
-        train_dataset = GINRNADataset(train_df, graph_encoding='allocator')
-        val_dataset = GINRNADataset(val_df, graph_encoding='allocator')
-        train_loader = GeoDataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-        val_loader = GeoDataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+    
+    elif model_type == "gin_1":
+        model = GINModelSingleLayer(graph_encoding=graph_encoding, hidden_dim=hidden_dim, output_dim=output_dim)
+        train_dataset = GINRNADataset(train_df, graph_encoding=graph_encoding)
+        val_dataset = GINRNADataset(val_df, graph_encoding=graph_encoding)
+        train_loader = GeoDataLoader(train_dataset, batch_size=batch_size, shuffle=True, pin_memory=True)
+        val_loader = GeoDataLoader(val_dataset, batch_size=batch_size, shuffle=False, pin_memory=True)
+
+    elif model_type == "gin":
+        model = GINModel(hidden_dim=hidden_dim, output_dim=output_dim, graph_encoding=graph_encoding, gin_layers = gin_layers)
+        train_dataset = GINRNADataset(train_df, graph_encoding=graph_encoding)
+        val_dataset = GINRNADataset(val_df, graph_encoding=graph_encoding)
+        train_loader = GeoDataLoader(train_dataset, batch_size=batch_size, shuffle=True, pin_memory=True)
+        val_loader = GeoDataLoader(val_dataset, batch_size=batch_size, shuffle=False, pin_memory=True)
 
     # Set up criterion and optimizer
     criterion = TripletLoss(margin=1.0)

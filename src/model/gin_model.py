@@ -2,9 +2,9 @@ import torch.nn as nn
 from torch_geometric.nn import global_add_pool
 from torch_geometric.nn import GINConv, Set2Set
 
-class GINModelGeneral(nn.Module):
+class GINModel(nn.Module):
     def __init__(self, hidden_dim, output_dim, graph_encoding = "allocator", gin_layers=1, dropout=0.1):
-        super(GINModelGeneral, self).__init__()
+        super(GINModel, self).__init__()
 
         input_dim = 1 if graph_encoding == "allocator" else 7
 
