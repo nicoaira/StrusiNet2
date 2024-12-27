@@ -951,7 +951,8 @@ def plot_triplets(df, plot_dir, num_samples=5):
                 success_N = plot_rna_structure(axs[2], df.iloc[sample_idx]['sequence_N'], df.iloc[sample_idx]['structure_N'], "Negative")
                 
                 if success_A and success_P and success_N:
-                    out_file = os.path.join(plot_dir, f'triplet_{sample_idx}.png')
+                    unique_id = df.iloc[sample_idx]['id']
+                    out_file = os.path.join(plot_dir, f'triplet_{unique_id}.png')
                     plt.savefig(out_file)
                     plt.close()
                     successful_plots += 1
@@ -964,3 +965,14 @@ def plot_triplets(df, plot_dir, num_samples=5):
             
     if successful_plots < num_samples:
         print(f"Warning: Only managed to plot {successful_plots}/{num_samples} requested triplets")
+
+def split_dataset(df, train_fraction, val_fraction):
+    """Split the dataset into training and validation sets."""
+    if train_fraction + val_fraction != 1.0:
+        raise ValueError("Train and validation fractions must sum to 1.0")
+    
+    train_size = int(len(df) * train_fraction)
+    train_df = df.sample(train_size, random_state=42)
+    val_df = df.drop(train_df.index)
+    
+    return train_df, val_df

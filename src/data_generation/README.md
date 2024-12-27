@@ -101,7 +101,10 @@ This module generates synthetic RNA structure-sequence triplets for training mac
 {
     'num_workers': 16,        # Number of parallel processes
     'variable_rearrangements': True,  # Length-dependent rearrangements
-    'norm_nt': 100           # Nucleotides per rearrangement
+    'norm_nt': 100,           # Nucleotides per rearrangement
+    'split': False,           # Enable dataset splitting
+    'train_fraction': 0.8,    # Fraction of data for training
+    'val_fraction': 0.2       # Fraction of data for validation
 }
 ```
 
@@ -112,6 +115,8 @@ Results directory contains:
 - `results.csv`: Main data file with structures and sequences
 - `results_metadata.json`: Run parameters and metadata
 - `plots/`: Optional visualizations of structure triplets
+- `train.csv`: Training data file (if split is enabled)
+- `val.csv`: Validation data file (if split is enabled)
 
 ### CSV Format
 ```csv
@@ -140,6 +145,16 @@ python generate_data.py \
     --seq_max_len 600 \
     --results_dir path/to/output \
     --plot_structures
+
+# Using command line tool with dataset splitting
+python generate_data.py \
+    --num_structures 1000 \
+    --seq_min_len 60 \
+    --seq_max_len 600 \
+    --results_dir path/to/output \
+    --split \
+    --train_fraction 0.8 \
+    --val_fraction 0.2
 ```
 
 ## Visualization
