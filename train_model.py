@@ -14,7 +14,7 @@ from src.model.gin_model import GINModel
 from src.model.siamese_model import SiameseResNetLSTM
 from src.triplet_loss import TripletLoss
 from src.triplet_rna_dataset import TripletRNADataset
-from src.utils import is_valid_dot_bracket
+from src.utils import is_valid_dot_bracket, log_information, log_setup
 import time
 
 def remove_invalid_structures(df):
@@ -125,8 +125,6 @@ def train_model_with_early_stopping(
 
     print("Training complete.")
 
-    output_folder = f"output/{output_name}"
-    os.makedirs(output_folder, exist_ok=True)  # Ensure output directory exists
     save_model_to_local(model, optimizer, epoch, output_name)
 
 def main():
@@ -188,6 +186,30 @@ def main():
 
     start_time = time.time()
 
+    output_folder = f"output/{args.output_name}"
+    os.makedirs(output_folder, exist_ok=True)
+
+    log_path = f"{output_folder}/train.log"
+    log_setup(log_path)
+
+    training_params = {
+        "train_data_path": dataset_path,
+        "train_data_samples": df.shape[0],
+        "model_type": args.model_type,
+        "hidden_dim": args.hidden_dim,
+        "output_dim": args.output_dim,
+        "batch_size": args.batch_size,
+        "num_epochs": args.num_epochs,
+        "patience": args.patience,
+        "lr": args.lr,
+        "criterion": "TripletLoss"
+    }
+    if args.model_type == "gin":
+        training_params["gin_layers"] = args.gin_layers
+        training_params["graph_encoding"] = args.graph_encoding
+
+    log_information(log_path, "Training params", training_params)
+    
     # Train the model with early stopping
     train_model_with_early_stopping(
         model,
@@ -205,6 +227,10 @@ def main():
     execution_time_minutes = (end_time - start_time) / 60
 
     print(f"Finished. Total execution time: {execution_time_minutes:.6f} minutes")
+    execution_time = {
+        "Total execution time" : f"{execution_time_minutes:.6f} minutes"
+    }
+    log_information(log_path, "Execution time", execution_time)
 
 if __name__ == "__main__":
     main()
