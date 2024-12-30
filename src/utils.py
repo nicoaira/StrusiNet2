@@ -1,7 +1,9 @@
 from datetime import datetime
 import platform
 import sys
+import GPUtil
 import numpy as np
+import psutil
 import torch
 import networkx as nx
 from torch_geometric.data import Data
@@ -176,6 +178,55 @@ def forgi_graph_to_tensor(g):
 
     return data
 
+
+def get_system_info():
+    # Operating System
+    os_name = platform.system()
+    os_version = platform.version()
+    os_release = platform.release()
+
+    # CPU Info
+    cpu = platform.processor()
+    physical_cores = psutil.cpu_count(logical=False)
+    total_cores = psutil.cpu_count(logical=True)
+
+    # Memory Info
+    svmem = psutil.virtual_memory()
+    total_memory = svmem.total / (1024 ** 3)  # Convert to GB
+
+    # Disk Info
+    total_disk_space = psutil.disk_usage('/').total / (1024 ** 3)  # Convert to GB
+
+    # GPU Info
+    gpus = GPUtil.getGPUs()
+    gpu_info = []
+    for gpu in gpus:
+        gpu_info.append({
+            "Name": gpu.name,
+            "Load": f"{gpu.load * 100:.2f}%",
+            "Memory Total": f"{gpu.memoryTotal}MB",
+            "Memory Used": f"{gpu.memoryUsed}MB",
+            "Memory Free": f"{gpu.memoryFree}MB",
+            "Driver Version": gpu.driver
+        })
+
+    # Collect all info into a dictionary
+    system_info = {
+        "Operating System": f"{os_name} {os_release} (Version: {os_version})",
+        "Platform": platform.platform(),
+        "Python Version": platform.python_version(),
+        "CPU": {
+            "Name": cpu,
+            "Physical Cores": physical_cores,
+            "Total Cores": total_cores,
+        },
+        "Memory": f"{total_memory:.2f} GB",
+        "Disk Space": f"{total_disk_space:.2f} GB",
+        "GPU": gpu_info if gpu_info else "No GPU Detected",
+    }
+
+    return system_info
+
 def log_setup(log_path):
     """
     Sets up and logs basic run information to a specified log file.
@@ -193,15 +244,11 @@ def log_setup(log_path):
     log_info = {
         "Date and Time": str(datetime.now()),
         "Command Run": " ".join(sys.argv),
-        "Platform": platform.platform(),
-        "Python Version": platform.python_version(),
-        "CUDA Available": str(torch.cuda.is_available()),
     }
-    if torch.cuda.is_available():
-        log_info["GPU"] = torch.cuda.get_device_name(0)
-    else:
-        log_info["GPU"] = "No GPU"
     log_information(log_path, log_info, "Run Info", 'w')
+
+    system_info = get_system_info()
+    log_information(log_path, system_info, "System Info")
 
 
 def log_information(log_path, info_dict, log_name = None, open_type='a'):
