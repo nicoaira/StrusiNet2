@@ -201,10 +201,10 @@ def log_setup(log_path):
         log_info["GPU"] = torch.cuda.get_device_name(0)
     else:
         log_info["GPU"] = "No GPU"
-    log_information(log_path, "Run Info", log_info, 'w')
+    log_information(log_path, log_info, "Run Info", 'w')
 
 
-def log_information(log_path, log_name, info_dict, open_type='a'):
+def log_information(log_path, info_dict, log_name = None, open_type='a'):
     """
     Logs detailed information to a specified log file.
 
@@ -225,7 +225,8 @@ def log_information(log_path, log_name, info_dict, open_type='a'):
         File open mode. Defaults to 'a' (append mode). Use 'w' to overwrite 
         the log file.
     """
-    info_dict = {"Log name": log_name, **info_dict}
+    if log_name:
+        info_dict = {"Log name": log_name, **info_dict}
     with open(log_path, open_type) as f:
         f.write("\n" + "="*50 + "\n")
         for key, value in info_dict.items():
