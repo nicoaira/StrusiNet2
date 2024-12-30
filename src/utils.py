@@ -1,3 +1,6 @@
+from datetime import datetime
+import platform
+import sys
 import numpy as np
 import torch
 import networkx as nx
@@ -172,3 +175,59 @@ def forgi_graph_to_tensor(g):
     data = Data(x=x, edge_index=edge_index)
 
     return data
+
+def log_setup(log_path):
+    """
+    Sets up and logs basic run information to a specified log file.
+
+    This function records essential details about the runtime environment,
+    including the date and time, the command run, platform information, 
+    Python version, and GPU details (if available). The information is 
+    logged in a specified file in write mode, overwriting any existing content.
+
+    Parameters
+    ----------
+    log_path : str
+        Path to the log file where the runtime information will be stored.
+    """
+    log_info = {
+        "Date and Time": str(datetime.now()),
+        "Command Run": " ".join(sys.argv),
+        "Platform": platform.platform(),
+        "Python Version": platform.python_version(),
+        "CUDA Available": str(torch.cuda.is_available()),
+    }
+    if torch.cuda.is_available():
+        log_info["GPU"] = torch.cuda.get_device_name(0)
+    else:
+        log_info["GPU"] = "No GPU"
+    log_information(log_path, log_info, "Run Info", 'w')
+
+
+def log_information(log_path, info_dict, log_name = None, open_type='a'):
+    """
+    Logs detailed information to a specified log file.
+
+    This function writes a log entry to a file, including a header and 
+    key-value pairs from the provided dictionary. Each log entry is separated
+    by a line of equal signs for clarity.
+
+    Parameters
+    ----------
+    log_path : str
+        Path to the log file where the information will be logged.
+    log_name : str
+        A header name for the log entry to provide context about the information.
+    info_dict : dict
+        A dictionary containing the information to be logged. The dictionary
+        is automatically augmented with the `log_name` as the first entry.
+    open_type : str, optional
+        File open mode. Defaults to 'a' (append mode). Use 'w' to overwrite 
+        the log file.
+    """
+    with open(log_path, open_type) as f:
+        f.write("\n" + "="*50 + "\n")
+        if log_name:
+            f.write(f"{log_name}\n")
+        for key, value in info_dict.items():
+            f.write(f"{key}: {value}\n")

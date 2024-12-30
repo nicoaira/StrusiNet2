@@ -14,7 +14,7 @@ from src.model.gin_model import GINModel
 from src.model.siamese_model import SiameseResNetLSTM
 from src.triplet_loss import TripletLoss
 from src.triplet_rna_dataset import TripletRNADataset
-from src.utils import is_valid_dot_bracket
+from src.utils import is_valid_dot_bracket, log_information, log_setup
 import time
 
 def remove_invalid_structures(df):
@@ -28,7 +28,7 @@ def remove_invalid_structures(df):
 import torch
 from datetime import datetime
 
-def save_model_to_local(model, optimizer, epoch, output_name):
+def save_model_to_local(model, optimizer, epoch, output_name, log_path):
     """
     Save the model's state_dict, optimizer's state_dict, and the current epoch to local,
     including a timestamp in the file name.
@@ -57,6 +57,10 @@ def save_model_to_local(model, optimizer, epoch, output_name):
     torch.save(checkpoint, file_name_with_timestamp)
     print(f"Model saved to {file_name_with_timestamp}")
 
+    save_log = {
+        "Model saved path": file_name_with_timestamp
+    }
+    log_information(log_path, save_log)
 
 
 def train_model_with_early_stopping(
@@ -68,7 +72,8 @@ def train_model_with_early_stopping(
         criterion,
         num_epochs,
         patience,
-        device
+        device,
+        log_path
 ):
     """
     Train either a GIN model or a Siamese model with early stopping.
@@ -115,6 +120,12 @@ def train_model_with_early_stopping(
                 val_loss += loss.item()
                 progress_bar_val.set_postfix({"Val Loss": val_loss / (i + 1)})
 
+        epoch_log = {
+            "Epoch": f"{epoch + 1}/{num_epochs}",
+            "Training Loss": f"{running_loss / len(train_loader)}",
+            "Validation Loss": f"{val_loss / len(val_loader)}"
+        }
+        log_information(log_path, epoch_log)
         print(f"Epoch {epoch + 1}/{num_epochs}, Training Loss: {running_loss / len(train_loader)}, Validation Loss: {val_loss / len(val_loader)}")
 
         # Early stopping
@@ -123,11 +134,11 @@ def train_model_with_early_stopping(
             print("Early stopping")
             break
 
+    finished_reason = "Early stopping" if early_stopping.early_stop else f"{epoch+1} epochs"
+    log_information(log_path, {"Training finished": finished_reason})
     print("Training complete.")
 
-    output_folder = f"output/{output_name}"
-    os.makedirs(output_folder, exist_ok=True)  # Ensure output directory exists
-    save_model_to_local(model, optimizer, epoch, output_name)
+    save_model_to_local(model, optimizer, epoch, output_name, log_path)
 
 def main():
     # Argument parsing
@@ -188,6 +199,30 @@ def main():
 
     start_time = time.time()
 
+    output_folder = f"output/{args.output_name}"
+    os.makedirs(output_folder, exist_ok=True)
+
+    log_path = f"{output_folder}/train.log"
+    log_setup(log_path)
+
+    training_params = {
+        "train_data_path": dataset_path,
+        "train_data_samples": df.shape[0],
+        "model_type": args.model_type,
+        "hidden_dim": args.hidden_dim,
+        "output_dim": args.output_dim,
+        "batch_size": args.batch_size,
+        "num_epochs": args.num_epochs,
+        "patience": args.patience,
+        "lr": args.lr,
+        "criterion": "TripletLoss"
+    }
+    if args.model_type == "gin":
+        training_params["gin_layers"] = args.gin_layers
+        training_params["graph_encoding"] = args.graph_encoding
+
+    log_information(log_path, training_params, "Training params")
+    
     # Train the model with early stopping
     train_model_with_early_stopping(
         model,
@@ -198,13 +233,18 @@ def main():
         criterion,
         num_epochs=args.num_epochs,
         patience=args.patience,
-        device=args.device
+        device=args.device,
+        log_path=log_path
     )
 
     end_time = time.time()
     execution_time_minutes = (end_time - start_time) / 60
 
     print(f"Finished. Total execution time: {execution_time_minutes:.6f} minutes")
+    execution_time = {
+        "Total execution time" : f"{execution_time_minutes:.6f} minutes"
+    }
+    log_information(log_path, execution_time, "Execution time")
 
 if __name__ == "__main__":
     main()

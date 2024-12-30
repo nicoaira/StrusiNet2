@@ -13,3 +13,4 @@ plots/
 data/*
 launch.json
 .vscode/
+benchmarking_results-*
