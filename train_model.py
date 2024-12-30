@@ -58,7 +58,7 @@ def save_model_to_local(model, optimizer, epoch, output_name, log_path):
     print(f"Model saved to {file_name_with_timestamp}")
 
     save_log = {
-        "Model saved path": {file_name_with_timestamp}
+        "Model saved path": file_name_with_timestamp
     }
     log_information(log_path, save_log)
 
@@ -125,7 +125,7 @@ def train_model_with_early_stopping(
             "Training Loss": f"{running_loss / len(train_loader)}",
             "Validation Loss": f"{val_loss / len(val_loader)}"
         }
-        log_information(log_path, epoch_log, "Epoch log")
+        log_information(log_path, epoch_log)
         print(f"Epoch {epoch + 1}/{num_epochs}, Training Loss: {running_loss / len(train_loader)}, Validation Loss: {val_loss / len(val_loader)}")
 
         # Early stopping
@@ -134,7 +134,7 @@ def train_model_with_early_stopping(
             print("Early stopping")
             break
 
-    finished_reason = "Early stopping" if early_stopping.early_stop else f"{epoch} epochs"
+    finished_reason = "Early stopping" if early_stopping.early_stop else f"{epoch+1} epochs"
     log_information(log_path, {"Training finished": finished_reason})
     print("Training complete.")
 

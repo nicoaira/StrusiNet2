@@ -225,9 +225,9 @@ def log_information(log_path, info_dict, log_name = None, open_type='a'):
         File open mode. Defaults to 'a' (append mode). Use 'w' to overwrite 
         the log file.
     """
-    if log_name:
-        info_dict = {"Log name": log_name, **info_dict}
     with open(log_path, open_type) as f:
         f.write("\n" + "="*50 + "\n")
+        if log_name:
+            f.write(f"{log_name}\n")
         for key, value in info_dict.items():
             f.write(f"{key}: {value}\n")
