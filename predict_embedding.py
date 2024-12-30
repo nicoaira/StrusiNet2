@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import random
+import time
 import torch
 import pandas as pd
 from tqdm import tqdm
@@ -8,7 +9,7 @@ import argparse
 from src.model.gin_model import GINModel
 from src.model.siamese_model import SiameseResNetLSTM
 from src.model.gin_model_single_layer import GINModelSingleLayer
-from src.utils import dotbracket_to_forgi_graph, forgi_graph_to_tensor, pad_and_convert_to_contact_matrix, dotbracket_to_graph, graph_to_tensor
+from src.utils import dotbracket_to_forgi_graph, forgi_graph_to_tensor, log_information, log_setup, pad_and_convert_to_contact_matrix, dotbracket_to_graph, graph_to_tensor
 import os
 import subprocess
 from pathlib import Path
@@ -109,20 +110,17 @@ def validate_structure(structure):
 
 
 def generate_embeddings(
-        input,
+        input_df,
         output_path,
-        samples,
         model_type,
         model_path,
-        structure_column_name='secondary_structure',
-        structure_column_num=None,
+        log_path,
         max_len=641,
         device='cpu',
-        header=True,
         graph_encoding='allocator',
         gin_layers=1,
         hidden_dim=256,
-        output_dim=128
+        output_dim=128,
 ):
     # Load the trained model
     model = load_trained_model(
@@ -135,7 +133,37 @@ def generate_embeddings(
         output_dim=output_dim
     )
 
-    # Determine delimiter based on file extension
+
+    # Initialize list for storing embeddings
+    embeddings = []
+
+    # Iterate over rows and calculate embeddings using tqdm for progress bar
+    with torch.no_grad():
+        for idx, row in tqdm(input_df.iterrows(), total=len(input_df), desc="Processing Embeddings"):
+            structure = row[structure_column]
+            # Validate the dot-bracket structure
+            validate_structure(structure)
+            if model_type == "siamese":
+                embedding = get_siamese_embedding(
+                    model, structure, max_len, device=device)
+            elif "gin" in model_type:
+                embedding = get_gin_embedding(model, graph_encoding, structure)
+
+            # Convert list to comma-separated string
+            embeddings.append(embedding)
+
+    # Add the embeddings to the DataFrame
+    input_df['embedding_vector'] = embeddings
+
+    # Save the output TSV
+    input_df.to_csv(output_path, sep='\t', index=False)
+    print(f"Embeddings saved to {output_path}")
+    save_log = {
+        "Embeddings saved path": output_path
+    }
+    log_information(log_path, save_log)
+
+def read_input_data(input, samples, structure_column_num, header):
     delimiter = '\t' if input.endswith('.tsv') else ','
 
     # Load the input CSV based on whether there is a header or not
@@ -150,40 +178,18 @@ def generate_embeddings(
     if samples:
         random_indices = random.sample(range(len(df)), samples)
         df = df.iloc[random_indices].copy()
-    # Determine which column to use for structure
+    return df
+
+def get_structure_column_name(input_df, header,structure_column_name, structure_column_num):
     if header:
-        if args.structure_column_name:
+        if structure_column_name:
             structure_column = structure_column_name
-        elif structure_column_num is not None and not args.structure_column_name:
-            structure_column = df.columns[structure_column_num]
+        elif args.structure_column_num is not None and not structure_column_name:
+            structure_column = input_df.columns[structure_column_num]
         else:
             # default value = secondary_structure
             structure_column = "secondary_structure"
-
-    # Initialize list for storing embeddings
-    embeddings = []
-
-    # Iterate over rows and calculate embeddings using tqdm for progress bar
-    with torch.no_grad():
-        for idx, row in tqdm(df.iterrows(), total=len(df), desc="Processing Embeddings"):
-            structure = row[structure_column]
-            # Validate the dot-bracket structure
-            validate_structure(structure)
-            if model_type == "siamese":
-                embedding = get_siamese_embedding(
-                    model, structure, max_len, device=device)
-            elif "gin" in model_type:
-                embedding = get_gin_embedding(model, graph_encoding, structure)
-
-            # Convert list to comma-separated string
-            embeddings.append(embedding)
-
-    # Add the embeddings to the DataFrame
-    df['embedding_vector'] = embeddings
-
-    # Save the output TSV
-    df.to_csv(output_path, sep='\t', index=False)
-    print(f"Embeddings saved to {output_path}")
+    return structure_column
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -234,21 +240,52 @@ if __name__ == "__main__":
     else:
         raise "Either output path or output name must be defined"
     
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    input_df = read_input_data(args.input, args.samples, args.structure_column_num, args.header)
 
+    # Determine which column to use for structure
+    structure_column = get_structure_column_name(input_df, args.header, args.structure_column_name, args.structure_column_num)
+    
+    output_folder = os.path.dirname(output_path) 
+    os.makedirs(output_folder, exist_ok=True)
+
+    log_path = f"{output_folder}/predict_embedding.log"
+    log_setup(log_path)
+
+    predict_params = {
+        "model_path": args.model_path,
+        "model_type": args.model_type,
+        "hidden_dim": args.hidden_dim,
+        "output_dim": args.output_dim,
+        "device": args.device,
+        "test_data_path": args.input,
+        "samples_test_data": input_df.shape[0]
+    }
+    if args.model_type == "gin":
+        predict_params["gin_layers"] = args.gin_layers
+        predict_params["graph_encoding"] = args.graph_encoding
+
+    log_information(log_path, predict_params, "Predict params")
+    
+    start_time = time.time()
     # Generate embeddings
     generate_embeddings(
-        args.input,
+        input_df,
         output_path,
-        args.samples,
         args.model_type,
         args.model_path,
-        structure_column_name=args.structure_column_name,
-        structure_column_num=args.structure_column_num,
+        log_path,
         device=args.device,
-        header=args.header,
         graph_encoding=args.graph_encoding,
         gin_layers=args.gin_layers,
         hidden_dim=args.hidden_dim,
         output_dim=args.output_dim
     )
+
+    end_time = time.time()
+    execution_time_minutes = (end_time - start_time) / 60
+
+    print(f"Finished. Total execution time: {execution_time_minutes:.6f} minutes")
+    execution_time = {
+        "Total execution time" : f"{execution_time_minutes:.6f} minutes"
+    }
+    log_information(log_path, execution_time, "Execution time")
