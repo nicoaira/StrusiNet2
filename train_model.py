@@ -28,7 +28,7 @@ def remove_invalid_structures(df):
 import torch
 from datetime import datetime
 
-def save_model_to_local(model, optimizer, epoch, output_name, log_path):
+def save_model_to_local(model, optimizer, epoch, model_id, log_path):
     """
     Save the model's state_dict, optimizer's state_dict, and the current epoch to local,
     including a timestamp in the file name.
@@ -39,12 +39,11 @@ def save_model_to_local(model, optimizer, epoch, output_name, log_path):
     - epoch: The current epoch to save.
     - model_save_path: Path to save the model (without file extension).
     """
-    # Get the current timestamp
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_path = f"output/{output_name}/{output_name}_{timestamp}.pth"
+
+    output_path = f"output/{model_id}/{model_id}.pth"
 
     # Append the timestamp to the file name
-    file_name_with_timestamp = output_path
+    file_name = output_path
 
     # Create the checkpoint
     checkpoint = {
@@ -54,18 +53,18 @@ def save_model_to_local(model, optimizer, epoch, output_name, log_path):
     }
 
     # Save the checkpoint
-    torch.save(checkpoint, file_name_with_timestamp)
-    print(f"Model saved to {file_name_with_timestamp}")
+    torch.save(checkpoint, file_name)
+    print(f"Model saved to {file_name}")
 
     save_log = {
-        "Model saved path": file_name_with_timestamp
+        "Model saved path": file_name
     }
     log_information(log_path, save_log)
 
 
 def train_model_with_early_stopping(
         model,
-        output_name,
+        model_id,
         train_loader,
         val_loader,
         optimizer,
@@ -138,13 +137,13 @@ def train_model_with_early_stopping(
     log_information(log_path, {"Training finished": finished_reason})
     print("Training complete.")
 
-    save_model_to_local(model, optimizer, epoch, output_name, log_path)
+    save_model_to_local(model, optimizer, epoch, model_id, log_path)
 
 def main():
     # Argument parsing
     parser = argparse.ArgumentParser(description="Generate embeddings from RNA secondary structures using a trained Siamese or GIN model.")
     parser.add_argument('--input_path', type=str, required=True, help='Path to the input CSV/TSV file containing RNA secondary structures.')
-    parser.add_argument('--output_name', type=str, default='siamese_model', help='Output name')
+    parser.add_argument('--model_id', type=str, default='siamese_model', help='Model id')
     parser.add_argument('--model_type', type=str, default='siamese', required=True, choices=['siamese', 'gin_1', 'gin'], help="Type of model to use: 'siamese' or 'gin'.")
     parser.add_argument('--graph_encoding', type=str, choices=['allocator', 'forgi'], default='allocator', help='Encoding to use for the transformation to graph. Only used in case of gin modeling')
     parser.add_argument('--hidden_dim', type=int, default=256, help='Hidden dimension size for the model.')
@@ -153,7 +152,6 @@ def main():
     parser.add_argument('--num_epochs', type=int, default=10, help='Number of epochs to train the model.')
     parser.add_argument('--patience', type=int, default=5, help='Patience for early stopping.')
     parser.add_argument('--lr', type=float, default=0.001, help='Learning rate for the optimizer.')
-    parser.add_argument('--device', type=str, default='cpu', help='Device to use for training (e.g., "cpu" or "cuda").')
     parser.add_argument('--gin_layers', type=int, default=1, help='Number of gin layers.')
     args = parser.parse_args()
 
@@ -162,6 +160,8 @@ def main():
     df = pd.read_csv(dataset_path)
     df = remove_invalid_structures(df)
     train_df, val_df = train_test_split(df, test_size=0.2, random_state=42)
+
+    device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # Instantiate model, criterion, optimizer, and dataset based on model type
     if args.model_type == "siamese":
@@ -199,7 +199,7 @@ def main():
 
     start_time = time.time()
 
-    output_folder = f"output/{args.output_name}"
+    output_folder = f"output/{args.model_id}"
     os.makedirs(output_folder, exist_ok=True)
 
     log_path = f"{output_folder}/train.log"
@@ -226,14 +226,14 @@ def main():
     # Train the model with early stopping
     train_model_with_early_stopping(
         model,
-        args.output_name,
+        args.model_id,
         train_loader,
         val_loader,
         optimizer,
         criterion,
         num_epochs=args.num_epochs,
         patience=args.patience,
-        device=args.device,
+        device=device,
         log_path=log_path
     )
 
