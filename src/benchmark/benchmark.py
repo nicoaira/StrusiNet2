@@ -110,7 +110,6 @@ def get_embeddings(model_script,
         "--output", emb_output_path,
         "--model_path", model_weights_path,
         "--model_type", model_type,
-        "--device", device,
         "--header", str(header)
     ]
 

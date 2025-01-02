@@ -199,7 +199,7 @@ if __name__ == "__main__":
     parser.add_argument('--samples', type=int)
     
     parser.add_argument('--output', type=str, help='Output path of the embedding')
-    parser.add_argument('--output_name', type=str, help='If output path not defined, store in output/{output_name}/{output_name}_embedding.tsv')
+    parser.add_argument('--model_id', type=str, help='If output path not defined, store in output/{model_id}/{model_id}_embedding.tsv')
     
     parser.add_argument('--structure_column_name', type=str,
                         help='Name of the column with the RNA secondary structures.')
@@ -219,8 +219,6 @@ if __name__ == "__main__":
     parser.add_argument('--graph_encoding', type=str, choices=['allocator', 'forgi'], default='allocator',
                         help='Encoding to use for the transformation to graph. Only used in case of gin modeling')
 
-    parser.add_argument('--device', type=str, default='cpu',
-                        help='Device to run the model on (e.g., "cpu" or "cuda").')
     parser.add_argument('--header', type=str, default='True',
                         help='Specify whether the input CSV file has a header (default: True). Use "True" or "False".')
     parser.add_argument('--hidden_dim', type=int, default=256, help='Hidden dimension size for the model.')
@@ -235,8 +233,8 @@ if __name__ == "__main__":
 
     if args.output:
         output_path = args.output
-    elif args.output_name:
-        output_path = f"output/{args.output_name}/{args.output_name}_embeddings.tsv"
+    elif args.model_id:
+        output_path = f"output/{args.model_id}/{args.model_id}_embeddings.tsv"
     else:
         raise "Either output path or output name must be defined"
     
@@ -244,6 +242,8 @@ if __name__ == "__main__":
 
     # Determine which column to use for structure
     structure_column = get_structure_column_name(input_df, args.header, args.structure_column_name, args.structure_column_num)
+    
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     
     output_folder = os.path.dirname(output_path) 
     os.makedirs(output_folder, exist_ok=True)
@@ -256,7 +256,7 @@ if __name__ == "__main__":
         "model_type": args.model_type,
         "hidden_dim": args.hidden_dim,
         "output_dim": args.output_dim,
-        "device": args.device,
+        "device": device,
         "test_data_path": args.input,
         "samples_test_data": input_df.shape[0]
     }
@@ -274,7 +274,7 @@ if __name__ == "__main__":
         args.model_type,
         args.model_path,
         log_path,
-        device=args.device,
+        device=device,
         graph_encoding=args.graph_encoding,
         gin_layers=args.gin_layers,
         hidden_dim=args.hidden_dim,
