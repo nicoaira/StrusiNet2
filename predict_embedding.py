@@ -82,7 +82,7 @@ def get_siamese_embedding(model, structure, max_len, device='cpu'):
 # Function to get embedding from graph
 
 
-def get_gin_embedding(model, graph_encoding, structure):
+def get_gin_embedding(model, graph_encoding, structure, device):
     if graph_encoding == "allocator":
         graph = dotbracket_to_graph(structure)
         tg = graph_to_tensor(graph)
@@ -90,6 +90,7 @@ def get_gin_embedding(model, graph_encoding, structure):
         graph = dotbracket_to_forgi_graph(structure)
         tg = forgi_graph_to_tensor(graph)
 
+    tg.to(device)
     model.eval()
     with torch.no_grad():
         embedding = model.forward_once(tg)
@@ -147,7 +148,7 @@ def generate_embeddings(
                 embedding = get_siamese_embedding(
                     model, structure, max_len, device=device)
             elif "gin" in model_type:
-                embedding = get_gin_embedding(model, graph_encoding, structure)
+                embedding = get_gin_embedding(model, graph_encoding, structure, device)
 
             # Convert list to comma-separated string
             embeddings.append(embedding)
