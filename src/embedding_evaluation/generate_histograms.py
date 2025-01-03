@@ -5,8 +5,13 @@ import pandas as pd
 import torch
 from torch_geometric.loader import DataLoader as GeoDataLoader
 from torch.utils.data import DataLoader as TorchDataLoader
+import torch.nn.functional as F
+from matplotlib import pyplot as plt
+import os
 
-from src.embedding_evaluation.utils import save_model_histograms
+from tqdm import tqdm
+
+from src.embedding_evaluation.utils import square_dist
 from src.gin_rna_dataset import GINRNADataset
 from src.model.gin_model_single_layer import GINModelSingleLayer
 from src.model.gin_model import GINModel
@@ -70,17 +75,81 @@ def get_dataset_loader(model_type,val_df):
 
     return val_loader
 
+def generate_validation_embeddings(model, validation_loader):
+   
+  anchor_embeddings = []
+  positive_embeddings = []
+  negative_embeddings = []
+
+  with torch.no_grad():
+      progress_bar_val = tqdm(enumerate(validation_loader), total=len(validation_loader))
+      for _, batch in progress_bar_val:
+          anchor, positive, negative = batch
+
+          # Forward pass
+          anchor_out, positive_out, negative_out = model(
+              anchor, positive, negative)
+
+          # Collect embeddings
+          anchor_embeddings.append(anchor_out)
+          positive_embeddings.append(positive_out)
+          negative_embeddings.append(negative_out)
+
+  # Concatenate the results into single tensors
+  anchor_embeddings = torch.cat(anchor_embeddings)
+  positive_embeddings = torch.cat(positive_embeddings)
+  negative_embeddings = torch.cat(negative_embeddings)
+  return anchor_embeddings, positive_embeddings, negative_embeddings
+
+def save_model_histograms(model, validation_loader, model_id):
+  
+  def save_histogram(output_folder, anchor_embeddings, positive_embeddings, negative_embeddings, metric):
+      
+    if metric == 'cosine':
+      anchor_positive_similarity = F.cosine_similarity(anchor_embeddings, positive_embeddings, dim=1)
+      anchor_negative_similarity = F.cosine_similarity(anchor_embeddings, negative_embeddings, dim=1)
+    elif metric == 'square_dist':
+      anchor_positive_similarity = square_dist(anchor_embeddings, positive_embeddings)
+      anchor_negative_similarity = square_dist(anchor_embeddings, negative_embeddings)
+      
+    # Plot the histograms
+    plt.figure(figsize=(10, 6))
+
+    # Plot for anchor-positive distances (blue)
+    plt.hist(anchor_positive_similarity.numpy(), bins=30, alpha=0.5, label='Anchor-Positive', color='blue')
+
+    # Plot for anchor-negative distances (red)
+    plt.hist(anchor_negative_similarity.numpy(), bins=30, alpha=0.5, label='Anchor-Negative', color='red')
+
+    # Add labels and title
+    # Add labels and title
+    plt.xlabel('Distance')
+    plt.ylabel('Frequency')
+    plt.title(f'Histogram of Anchor-Positive and Anchor-Negative Distances ({metric.capitalize()} Metric)')
+    plt.legend()
+
+    output_path = os.path.join(output_folder, f"histogram_{metric}.png")
+    plt.savefig(output_path)
+    plt.close()  # Close the plot to free memory
+    print(f"Saved {metric} histogram to {output_path}")
+  
+  output_folder = f"output/{model_id}"
+  os.makedirs(output_folder, exist_ok=True)  # Ensure output directory exists
+  anchor_embeddings, positive_embeddings, negative_embeddings = generate_validation_embeddings(model, validation_loader)
+  save_histogram(output_folder, anchor_embeddings, positive_embeddings, negative_embeddings, 'cosine')
+  save_histogram(output_folder, anchor_embeddings, positive_embeddings, negative_embeddings, 'square_dist')
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="")
     parser.add_argument('--model_path', type=str, required=True)
-    parser.add_argument('--output_name', default = "output", type=str)
+    parser.add_argument('--model_id', default = "gin_2", type=str)
     parser.add_argument('--model_type', type=str, choices=["siamese", "gin_1", "gin"])
     parser.add_argument('--graph_encoding', type=str, choices=['allocator', 'forgi'], default='allocator',
                         help='Encoding to use for the transformation to graph. Only used in case of gin modeling')
     parser.add_argument('--hidden_dim', type=int, default=256, help='Hidden dimension size for the model.')
     parser.add_argument('--output_dim', type=int, default=128, help='Output embedding size for the GIN model (ignored for siamese).')
-    parser.add_argument('--val_dataset_path', default ="example_data/val_dataset.csv", type=str)
-    parser.add_argument('--sample_num', type=int)
+    parser.add_argument('--val_dataset_path', default ="data/example_data/val_dataset.csv", type=str)
+    parser.add_argument('--samples', type=int)
     parser.add_argument('--gin_layers', type=int)
     args = parser.parse_args()
 
@@ -88,8 +157,8 @@ if __name__ == "__main__":
     val_df = pd.read_csv(args.val_dataset_path)
     val_df = remove_invalid_structures(val_df)
 
-    if args.sample_num:
-        random_indices = random.sample(range(len(val_df)), args.sample_num)
+    if args.samples:
+        random_indices = random.sample(range(len(val_df)), args.samples)
         val_df = val_df.iloc[random_indices].copy()
 
     if args.model_type == "siamese":
@@ -110,8 +179,9 @@ if __name__ == "__main__":
         gin_layers=args.gin_layers,
         graph_encoding=args.graph_encoding,
         hidden_dim=args.hidden_dim,
-        output_dim=args.output_dim
+        output_dim=args.output_dim,
+        device="cuda" if torch.cuda.is_available() else "cpu"
     )
-    save_model_histograms(model, val_loader, args.output_name)
+    save_model_histograms(model, val_loader, args.model_id)
 
     
