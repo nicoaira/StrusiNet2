@@ -63,6 +63,8 @@ def get_embeddings(model_script,
                    model_type,
                    gin_layers,
                    graph_encoding,
+                   hidden_dim,
+                   output_dim,
                    structure_column_name,
                    structure_column_num,
                    header):
@@ -110,6 +112,8 @@ def get_embeddings(model_script,
         "--output", emb_output_path,
         "--model_path", model_weights_path,
         "--model_type", model_type,
+        "--hidden_dim", str(hidden_dim),
+        "--output_dim", str(output_dim),
         "--header", str(header)
     ]
 
@@ -539,6 +543,8 @@ def run_benchmark(model_script,
                   model_type,
                   gin_layers,
                   graph_encoding,
+                  hidden_dim,
+                  output_dim,
                   structure_column_name,
                   structure_column_num,
                   header,
@@ -681,6 +687,8 @@ def run_benchmark(model_script,
             model_type=model_type,
             gin_layers=gin_layers,
             graph_encoding=graph_encoding,
+            hidden_dim=hidden_dim,
+            output_dim=output_dim,
             structure_column_name=structure_column_name,
             structure_column_num=structure_column_num,
             header=header
@@ -789,7 +797,7 @@ if __name__ == "__main__":
                         help="Name of the JSON file containing benchmark dataset information (in --datasets-dir). Default: 'benchmarking_datasets.json'")
 
     parser.add_argument('--datasets-dir', dest='datasets_dir', type=str,
-                        default='./datasets',
+                        default='data/benchmark_datasets',
                         help="Directory containing the benchmark metadata JSON, primary sampled datasets, and benchmark datasets. Default: './datasets'")
 
     parser.add_argument('--benchmark-datasets', dest='benchmark_datasets',
@@ -845,6 +853,10 @@ if __name__ == "__main__":
 
     parser.add_argument('--graph_encoding', type=str, choices=['allocator', 'forgi'], default='allocator', help='Encoding to use for the transformation to graph. Only used in case of gin modeling')
 
+    parser.add_argument('--hidden_dim', type=int, default=256, help='Hidden dimension size for the model.')
+
+    parser.add_argument('--output_dim', type=int, default=128, help='Output embedding size for the GIN model (ignored for siamese).')
+
     args = parser.parse_args()
 
     if args.header.lower() not in ['true', 'false']:
@@ -883,6 +895,8 @@ if __name__ == "__main__":
         model_type=args.model_type,
         gin_layers=args.gin_layers,
         graph_encoding=args.graph_encoding,
+        hidden_dim=args.hidden_dim,
+        output_dim=args.output_dim,
         structure_column_name=args.structure_column_name, 
         structure_column_num=args.structure_column_num,
         header=args.header,
