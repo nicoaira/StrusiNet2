@@ -605,7 +605,7 @@ def run_benchmark(model_script,
             primary_datasets_needed_ids[pid].update(bm_df['rnacentral_id_2'].unique())
 
     if not no_save:
-        benchmarking_results_path = results_path + bm_start_time
+        benchmarking_results_path = results_path
         if not os.path.exists(benchmarking_results_path):
             os.makedirs(benchmarking_results_path)
     else:
