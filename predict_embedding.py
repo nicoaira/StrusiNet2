@@ -103,8 +103,7 @@ def validate_structure(structure):
             "The secondary structure must be a string containing valid characters for dot-bracket notation.")
     valid_characters = "()[]{}<>AaBbCcDd."
     if not all(char in valid_characters for char in structure):
-        raise ValueError(f"Invalid characters found in the column used for secondary structure: '{
-                         structure}'. Valid characters are: {valid_characters}")
+        raise ValueError(f"Invalid characters found in the column used for secondary structure: '{structure}'. Valid characters are: {valid_characters}")
 
 # Main function to generate embeddings from CSV or TSV
 
