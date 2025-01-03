@@ -1,9 +1,3 @@
-# Dataset Name: unpaired_rnas_rfam_benchmark
-# Creation Time: 2024-12-23 18:30:01
-# Rows Sampled: 7922
-# Random Seed: 42
-# Unique ID: c508458a
-# Version: 1
 Unnamed: 0	rnacentral_id	taxid	description	rna_type	so_rna_type	databases	secondary_structure	sequence	seq_len	rfam
 1034030	URS0000C1FDDD_51028	51028	Enterobius vermicularis RNase_MRP ribozyme sequence	RNase_MRP_RNA	SO:0000385	Rfam,RiboCentre	.((((((((((..((((((..(((((((........(((((((..))))))).........)))))).)...................((((.....))))...........................((((((.....)))))).(((................((((......((((...))))...))))...................))).....................))))))......................)))).))))))	CGGTGACGAGAAGTGAAACACTCGCAGCACCCTACCGGTCCATCCATGTGGCCGTCCTTAGGCTGTGTGAGAAAGTCCCTGAACCAAGGGCCGAAAGGGTAATAAGAACAAATTGATTGTTCGTCTGACCACCATTAGCTGGTGCAGCCGGTACATTTGGAAGTTGCGCCACGACGGTTATTTGCCTGAGCGTTCGACGTCCATCCAGTACCGGTGTTCGTTCTAAGCGAAGAAACGTTTCTAATAACAGCATAGGGCTTACTCTCTTGGTCACC	275	RF00030
 1453052	URS0000D9ACAB_50402	50402	Charadrius vociferus RNase_MRP ribozyme sequence	RNase_MRP_RNA	SO:0000385	Rfam,RiboCentre	...................((((.....))))((((((.....)))))).(((...((((((((((...........((((......((((..))))...)))).)))).))))))..)))............................((((((..))))))..............................	GCAAGGCCCCCGGGCCGCCGGCAGAGAGTGCCGGGCGCTGTGGGCGCCCCACCCGCCGCCGCCTCACGCCTTCCTCTCCGCCGAGACGCCCCCGGGCCGAGCGGGTGAGCGCGGGGCGGGTATTCGTCACCGCCACAGACATGCAGGTAGTGCGCAGGCGCACCAACAGAACGGGGCTCACTCTCAGGCCATC	193	RF00030
