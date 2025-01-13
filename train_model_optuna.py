@@ -15,7 +15,7 @@ from src.model.gin_model_single_layer import GINModelSingleLayer
 from src.model.siamese_model import SiameseResNetLSTM
 from src.triplet_loss import TripletLoss
 from src.triplet_rna_dataset import TripletRNADataset
-from src.utils import is_valid_dot_bracket
+from src.utils import is_valid_dot_bracket, log_information, log_setup
 import time
 from datetime import datetime
 
@@ -91,6 +91,7 @@ def main():
 
     parser = argparse.ArgumentParser(description="Generate embeddings from RNA secondary structures using a trained Siamese or GIN model.")
     parser.add_argument('--input_path', type=str, required=True, help='Path to the input CSV/TSV file containing RNA secondary structures.')
+    parser.add_argument('--optimisation_id', type=str, default='gin_optimisation', help='Model id')
     parser.add_argument('--model_type', type=str, default='gin', required=True, choices=['siamese', 'gin_1', 'gin'], help="Type of model to use: 'siamese' or 'gin'.")
     parser.add_argument('--graph_encoding', type=str, choices=['allocator', 'forgi'], default='allocator', help='Encoding to use for the transformation to graph. Only used in case of gin modeling')
     parser.add_argument('--batch_size', type=int, default=100, help='Batch size for training and validation.')
@@ -99,7 +100,12 @@ def main():
     args = parser.parse_args()
     # Create an Optuna study to optimize hyperparameters
 
-    
+    output_folder = f"output/{args.optimisation_id}"
+    os.makedirs(output_folder, exist_ok=True)
+
+    current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_path = f"{output_folder}/run_{current_time}.log"
+    log_setup(log_path)
     def objective(trial):
         # Sample hyperparameters from the search space
         lr = trial.suggest_float('lr', 1e-5, 1e-2, log=True)
@@ -141,7 +147,7 @@ def main():
         # Run training with early stopping and return the validation loss
         val_loss = train_model_with_early_stopping(
             model,
-            'optuna_model',
+            args.optimisation_id,
             train_loader,
             val_loader,
             optimizer,
@@ -155,8 +161,7 @@ def main():
     study = optuna.create_study(direction='minimize')
     study.optimize(objective, n_trials=50)  # Run 50 trials
 
-    # Print the best trial
-    print("Best trial:", study.best_trial)
+    log_information(log_path, {"Best trial": study.best_trial})
 
 if __name__ == "__main__":
     main()
