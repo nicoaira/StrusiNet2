@@ -176,7 +176,7 @@ def main():
         ),
 
         trial_params["val_loss"] = val_loss
-        log_information(log_path, trial_params)
+        print(trial_params)
 
         return val_loss
 
