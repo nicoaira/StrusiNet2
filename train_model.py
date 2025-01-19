@@ -145,7 +145,7 @@ def main():
     parser.add_argument('--input_path', type=str, required=True, help='Path to the input CSV/TSV file containing RNA secondary structures.')
     parser.add_argument('--model_id', type=str, default='siamese_model', help='Model id')
     parser.add_argument('--model_type', type=str, default='siamese', required=True, choices=['siamese', 'gin_1', 'gin'], help="Type of model to use: 'siamese' or 'gin'.")
-    parser.add_argument('--graph_encoding', type=str, choices=['allocator', 'forgi'], default='allocator', help='Encoding to use for the transformation to graph. Only used in case of gin modeling')
+    parser.add_argument('--graph_encoding', type=str, choices=['standard', 'forgi'], default='standard', help='Encoding to use for the transformation to graph. Only used in case of gin modeling')
     parser.add_argument('--hidden_dim', type=int, default=256, help='Hidden dimension size for the model.')
     parser.add_argument('--output_dim', type=int, default=128, help='Output embedding size for the GIN model (ignored for siamese).')
     parser.add_argument('--batch_size', type=int, default=100, help='Batch size for training and validation.')

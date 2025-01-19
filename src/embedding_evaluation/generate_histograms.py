@@ -30,7 +30,7 @@ def remove_invalid_structures(df):
 def load_trained_model(
         model_path,
         model_type="siamese",
-        graph_encoding="allocator",
+        graph_encoding="standard",
         hidden_dim=256,
         output_dim=128,
         gin_layers=1,
@@ -166,7 +166,7 @@ if __name__ == "__main__":
     parser.add_argument('--model_path', type=str, required=True)
     parser.add_argument('--model_id', default = "gin_2", type=str)
     parser.add_argument('--model_type', type=str, choices=["siamese", "gin_1", "gin"])
-    parser.add_argument('--graph_encoding', type=str, choices=['allocator', 'forgi'], default='allocator',
+    parser.add_argument('--graph_encoding', type=str, choices=['standard', 'forgi'], default='standard',
                         help='Encoding to use for the transformation to graph. Only used in case of gin modeling')
     parser.add_argument('--hidden_dim', type=int, default=256, help='Hidden dimension size for the model.')
     parser.add_argument('--output_dim', type=int, default=128, help='Output embedding size for the GIN model (ignored for siamese).')
