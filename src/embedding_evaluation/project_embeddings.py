@@ -69,6 +69,7 @@ def save_scatter_2d(output_folder, df, embedding_tsne, column = 'rfam'):
     # Define file paths
     html_output_path = f"{output_folder}/scatter_tsne_{column}.html"
     png_output_path = f"{output_folder}/scatter_tsne_{column}.png"
+    svg_output_path = f"{output_folder}/scatter_tsne_{column}.svg"
 
     # Save as an interactive HTML file
     fig_tsne12.write_html(html_output_path)
@@ -77,6 +78,8 @@ def save_scatter_2d(output_folder, df, embedding_tsne, column = 'rfam'):
     # Save as a static PNG image
     pio.write_image(fig_tsne12, png_output_path, format='png', width=800, height=600)
     print(f"Scatter plot saved as PNG to {png_output_path}")
+    pio.write_image(fig_tsne12, svg_output_path, format='svg', width=800, height=600)
+    print(f"Scatter plot saved as SVG to {svg_output_path}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="")
