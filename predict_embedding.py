@@ -20,7 +20,7 @@ from pathlib import Path
 def load_trained_model(
         model_path,
         model_type="siamese",
-        graph_encoding="allocator",
+        graph_encoding="standard",
         hidden_dim=256,
         output_dim=128,
         lstm_layers=1,
@@ -83,7 +83,7 @@ def get_siamese_embedding(model, structure, max_len, device='cpu'):
 
 
 def get_gin_embedding(model, graph_encoding, structure, device):
-    if graph_encoding == "allocator":
+    if graph_encoding == "standard":
         graph = dotbracket_to_graph(structure)
         tg = graph_to_tensor(graph)
     elif graph_encoding == "forgi":
@@ -118,7 +118,7 @@ def generate_embeddings(
         structure_column,
         max_len=641,
         device='cpu',
-        graph_encoding='allocator',
+        graph_encoding='standard',
         gin_layers=1,
         hidden_dim=256,
         output_dim=128,
@@ -217,7 +217,7 @@ if __name__ == "__main__":
 
     parser.add_argument('--gin_layers', type=int, default=1, help='Number of gin layers.')
 
-    parser.add_argument('--graph_encoding', type=str, choices=['allocator', 'forgi'], default='allocator',
+    parser.add_argument('--graph_encoding', type=str, choices=['standard', 'forgi'], default='standard',
                         help='Encoding to use for the transformation to graph. Only used in case of gin modeling')
 
     parser.add_argument('--header', type=str, default='True',

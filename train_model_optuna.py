@@ -92,7 +92,7 @@ def main():
     parser.add_argument('--optimisation_id', type=str, default='gin_optimisation', help='Model id')
     parser.add_argument('--n_trials', type=int, default='50', help='Number of trials')
     parser.add_argument('--model_type', type=str, default='gin', required=True, choices=['siamese', 'gin_1', 'gin'], help="Type of model to use: 'siamese' or 'gin'.")
-    parser.add_argument('--graph_encoding', type=str, choices=['allocator', 'forgi'], default='forgi', help='Encoding to use for the transformation to graph. Only used in case of gin modeling')
+    parser.add_argument('--graph_encoding', type=str, choices=['standard', 'forgi'], default='forgi', help='Encoding to use for the transformation to graph. Only used in case of gin modeling')
     parser.add_argument('--batch_size', type=int, default=100, help='Batch size for training and validation.')
     parser.add_argument('--num_epochs', type=int, default=1, help='Number of epochs to train the model.')
     parser.add_argument('--patience', type=int, default=5, help='Patience for early stopping.')
