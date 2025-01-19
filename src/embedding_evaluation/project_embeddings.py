@@ -84,7 +84,7 @@ def save_scatter_2d(output_folder, df, embedding_tsne, column = 'rfam'):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="")
     parser.add_argument('--predict_embedding_path', type=str, required=True)
-    parser.add_argument('--output_name', default = "output", type=str)
+    parser.add_argument('--model_id', required=True, type=str)
     parser.add_argument('--sample_num', type=int)
     args = parser.parse_args()
 
@@ -97,7 +97,7 @@ if __name__ == "__main__":
 
     embedding_tsne = project_embeddings(df)
 
-    output_folder = f"output/{args.output_name}"
+    output_folder = f"output/{args.model_id}"
     os.makedirs(output_folder, exist_ok=True)
     save_scatter_2d(output_folder, df, embedding_tsne, column = 'rfam')
     save_scatter_2d(output_folder, df, embedding_tsne, column = 'rna_type')
