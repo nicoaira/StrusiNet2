@@ -2,7 +2,7 @@ from torch.utils.data import Dataset
 from src.utils import dotbracket_to_forgi_graph, dotbracket_to_graph, forgi_graph_to_tensor, graph_to_tensor
 
 class GINRNADataset(Dataset):
-    def __init__(self, dataframe, graph_encoding = "allocator"):
+    def __init__(self, dataframe, graph_encoding = "standard"):
         self.dataframe = dataframe
         self.graph_encoding = graph_encoding
 
@@ -14,7 +14,7 @@ class GINRNADataset(Dataset):
         positive_structure = self.dataframe.iloc[idx]["structure_P"]
         negative_structure = self.dataframe.iloc[idx]["structure_N"]
 
-        if self.graph_encoding == "allocator":
+        if self.graph_encoding == "standard":
             g_anchor = dotbracket_to_graph(anchor_structure)
             g_positive = dotbracket_to_graph(positive_structure)
             g_negative = dotbracket_to_graph(negative_structure)

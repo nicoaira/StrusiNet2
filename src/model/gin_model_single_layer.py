@@ -2,10 +2,10 @@ import torch.nn as nn
 from torch_geometric.nn import GINConv, Set2Set
 
 class GINModelSingleLayer(nn.Module):
-    def __init__(self, hidden_dim, output_dim, graph_encoding = "allocator", dropout=0.1):
+    def __init__(self, hidden_dim, output_dim, graph_encoding = "standard", dropout=0.1):
         super(GINModelSingleLayer, self).__init__()
 
-        input_dim = 1 if graph_encoding == "allocator" else 7
+        input_dim = 1 if graph_encoding == "standard" else 7
 
         # Define GIN convolution layers
         net = nn.Sequential(

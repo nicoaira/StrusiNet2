@@ -86,7 +86,7 @@ def get_embeddings(model_script,
     gin_layers: int
         Optional number of gin layers.
     graph_encoding: str
-        Type of gin encoding, forgi or allocator
+        Type of gin encoding, forgi or standard
     structure_column_name : str
         Name of the column containing RNA secondary structures, if provided.
     structure_column_num : int
@@ -851,7 +851,7 @@ if __name__ == "__main__":
     
     parser.add_argument('--gin_layers', type=int, help='Number of gin layers.')
 
-    parser.add_argument('--graph_encoding', type=str, choices=['allocator', 'forgi'], default='allocator', help='Encoding to use for the transformation to graph. Only used in case of gin modeling')
+    parser.add_argument('--graph_encoding', type=str, choices=['standard', 'forgi'], default='standard', help='Encoding to use for the transformation to graph. Only used in case of gin modeling')
 
     parser.add_argument('--hidden_dim', type=int, default=256, help='Hidden dimension size for the model.')
 
