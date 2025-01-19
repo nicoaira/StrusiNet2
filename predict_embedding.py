@@ -8,7 +8,6 @@ from tqdm import tqdm
 import argparse
 from src.model.gin_model import GINModel
 from src.model.siamese_model import SiameseResNetLSTM
-from src.model.gin_model_single_layer import GINModelSingleLayer
 from src.utils import dotbracket_to_forgi_graph, forgi_graph_to_tensor, log_information, log_setup, pad_and_convert_to_contact_matrix, dotbracket_to_graph, graph_to_tensor
 import os
 import subprocess
@@ -44,10 +43,6 @@ def load_trained_model(
     if model_type == "siamese":
         model = SiameseResNetLSTM(
             input_channels=1, hidden_dim=hidden_dim, lstm_layers=lstm_layers)
-    elif model_type == "gin_1":
-        model = GINModelSingleLayer(graph_encoding=graph_encoding,
-                         hidden_dim=hidden_dim, output_dim=output_dim)
-    
     elif model_type == "gin":
         model = GINModel(
             hidden_dim=hidden_dim,
@@ -213,7 +208,7 @@ if __name__ == "__main__":
     parser.add_argument('--model_path', type=str, default=str(default_model_path),
                         help=f'Path to the trained model file (default: {default_model_path}).')
 
-    parser.add_argument('--model_type', type=str, choices=['siamese', 'gin_1', 'gin'], default='siamese', help='Model type to run (e.g., "siamese" or "gin").')
+    parser.add_argument('--model_type', type=str, choices=['siamese', 'gin'], default='siamese', help='Model type to run (e.g., "siamese" or "gin").')
 
     parser.add_argument('--gin_layers', type=int, default=1, help='Number of gin layers.')
 

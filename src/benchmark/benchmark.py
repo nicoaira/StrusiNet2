@@ -847,7 +847,7 @@ if __name__ == "__main__":
     parser.add_argument('--no-log', dest='no_log', action='store_true',
                         help='If set, no log file will be created.')
     
-    parser.add_argument('--model_type', type=str, default='siamese', required=True, choices=['siamese', 'gin_1', 'gin'], help="Type of model to use: 'siamese' or 'gin'.")
+    parser.add_argument('--model_type', type=str, default='siamese', required=True, choices=['siamese', 'gin'], help="Type of model to use: 'siamese' or 'gin'.")
     
     parser.add_argument('--gin_layers', type=int, help='Number of gin layers.')
 

@@ -13,7 +13,6 @@ from tqdm import tqdm
 
 from src.embedding_evaluation.utils import square_dist
 from src.gin_rna_dataset import GINRNADataset
-from src.model.gin_model_single_layer import GINModelSingleLayer
 from src.model.gin_model import GINModel
 from src.model.siamese_model import SiameseResNetLSTM
 from src.triplet_rna_dataset import TripletRNADataset
@@ -40,11 +39,6 @@ def load_trained_model(
     if model_type == "siamese":
         model = SiameseResNetLSTM(
             input_channels=1, hidden_dim=hidden_dim, lstm_layers=lstm_layers)
-
-    elif model_type == "gin_1":
-        model = GINModelSingleLayer(graph_encoding=graph_encoding,
-                         hidden_dim=hidden_dim, output_dim=output_dim)
-    
     elif model_type == "gin":
         model = GINModel(hidden_dim=hidden_dim, output_dim=output_dim, graph_encoding=graph_encoding, gin_layers = gin_layers)
 
