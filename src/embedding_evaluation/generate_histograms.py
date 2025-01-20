@@ -114,30 +114,27 @@ def save_val_embeddings(anchor_embeddings, positive_embeddings, negative_embeddi
     # Save the DataFrame to a CSV file
     embeddings_df.to_csv(embeddings_path, index=False)
 
-def save_histogram(output_folder, anchor_embeddings, positive_embeddings, negative_embeddings, metric):
+def save_histogram(output_folder, anchor_embeddings, positive_embeddings, negative_embeddings, metric, square_dist_range = None):
     
     if metric == 'cosine':
         anchor_positive_similarity = F.cosine_similarity(anchor_embeddings, positive_embeddings, dim=1)
         anchor_negative_similarity = F.cosine_similarity(anchor_embeddings, negative_embeddings, dim=1)
+        hist_range = (0,1)
     elif metric == 'square_dist':
         anchor_positive_similarity = square_dist(anchor_embeddings, positive_embeddings)
         anchor_negative_similarity = square_dist(anchor_embeddings, negative_embeddings)
-        
+        hist_range = square_dist_range
+ 
     # Plot the histograms
     plt.figure(figsize=(10, 6))
 
     # Plot for anchor-positive distances (blue)
-    plt.hist(anchor_positive_similarity.numpy(), bins=30, alpha=0.5, label='Anchor-Positive', color='blue')
+    plt.hist(anchor_positive_similarity.numpy(), bins=30, alpha=0.5, range=hist_range, label='Anchor-Positive', color='blue')
 
     # Plot for anchor-negative distances (red)
-    plt.hist(anchor_negative_similarity.numpy(), bins=30, alpha=0.5, label='Anchor-Negative', color='red')
+    plt.hist(anchor_negative_similarity.numpy(), bins=30, alpha=0.5, range=hist_range, label='Anchor-Negative', color='red')
 
-    # plt.ylim(0, 25000)  # Set y-axis limits
-
-    # if metric == 'cosine':
-    #     plt.xlim(-0.5, 1)  # Set x-axis limits for cosine metric
-    # elif metric == 'square_dist':
-    #     plt.xlim(0, 1000)  # Set x-axis limits for square_dist metric
+    plt.ylim(0, 25000)  # Set y-axis limits
 
 
     # Add labels and title
@@ -147,8 +144,13 @@ def save_histogram(output_folder, anchor_embeddings, positive_embeddings, negati
     plt.title(f'Histogram of Anchor-Positive and Anchor-Negative Distances ({metric.capitalize()} Metric)')
     plt.legend()
 
-    output_path_png = os.path.join(output_folder, f"histogram_{metric}.png")
-    output_path_svg = os.path.join(output_folder, f"histogram_{metric}.svg")
+    if square_dist_range:
+        output_path_png = os.path.join(output_folder, f"histogram_{metric}.png")
+        output_path_svg = os.path.join(output_folder, f"histogram_{metric}.svg")
+    else:
+        output_path_png = os.path.join(output_folder, f"histogram_{metric}_original_scale.png")
+        output_path_svg = os.path.join(output_folder, f"histogram_{metric}_original_scale.svg")
+
     plt.savefig(output_path_png)
     plt.savefig(output_path_svg)
     plt.close()  # Close the plot to free memory
@@ -157,7 +159,7 @@ def save_histogram(output_folder, anchor_embeddings, positive_embeddings, negati
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="")
-    parser.add_argument('--model_path', type=str, required=True)
+    parser.add_argument('--model_path', type=str)
     parser.add_argument('--model_id', default = "gin_2", type=str)
     parser.add_argument('--model_type', type=str, choices=["siamese", "gin_1", "gin"])
     parser.add_argument('--graph_encoding', type=str, choices=['standard', 'forgi'], default='standard',
@@ -223,6 +225,7 @@ if __name__ == "__main__":
         negative_embeddings = torch.tensor(negative_embeddings_df.drop(columns=['Type']).values, dtype=torch.float32)
 
     save_histogram(output_folder, anchor_embeddings, positive_embeddings, negative_embeddings, 'cosine')
+    save_histogram(output_folder, anchor_embeddings, positive_embeddings, negative_embeddings, 'square_dist', square_dist_range=(0,1000))
     save_histogram(output_folder, anchor_embeddings, positive_embeddings, negative_embeddings, 'square_dist')
 
     
