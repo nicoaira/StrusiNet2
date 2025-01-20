@@ -347,8 +347,10 @@ def get_roc_auc(benchmark_name, benchmark_version,
         plt.title('AUC by RNA Type')
         plt.xticks(rotation=45, ha='right')
         plt.tight_layout()
-        benchmark_plot_filename = 'AUC_benchmark_' + benchmark_name + '-' + benchmark_version_f + '.png'
-        plt.savefig(os.path.join(plot_dir, benchmark_plot_filename), dpi=300)
+        benchmark_plot_filename_png = 'AUC_benchmark_' + benchmark_name + '-' + benchmark_version_f + '.png'
+        benchmark_plot_filename_svg = 'AUC_benchmark_' + benchmark_name + '-' + benchmark_version_f + '.svg'
+        plt.savefig(os.path.join(plot_dir, benchmark_plot_filename_png), dpi=300)
+        plt.savefig(os.path.join(plot_dir, benchmark_plot_filename_svg), dpi=300)
         plt.close()
 
     if not skip_auc_curve:
@@ -387,8 +389,11 @@ def get_roc_auc(benchmark_name, benchmark_version,
             axes[idx].axis('off')
 
         plt.tight_layout()
-        benchmark_plot_filename = 'ROC_curves_benchmark_' + benchmark_name + '-' + benchmark_version_f + '.png'
-        plt.savefig(os.path.join(plot_dir, benchmark_plot_filename), dpi=300)
+        benchmark_plot_filename_png = 'ROC_curves_benchmark_' + benchmark_name + '-' + benchmark_version_f + '.png'
+        benchmark_plot_filename_svg = 'ROC_curves_benchmark_' + benchmark_name + '-' + benchmark_version_f + '.svg'
+
+        plt.savefig(os.path.join(plot_dir, benchmark_plot_filename_png), dpi=300)
+        plt.savefig(os.path.join(plot_dir, benchmark_plot_filename_svg), dpi=300)
         plt.close()
 
     return {"auc_results": auc_results, "average_auc": average_auc}
