@@ -144,7 +144,7 @@ def save_histogram(output_folder, anchor_embeddings, positive_embeddings, negati
     plt.title(f'Histogram of Anchor-Positive and Anchor-Negative Distances ({metric.capitalize()} Metric)')
     plt.legend()
 
-    if square_dist_range:
+    if metric == 'square_dist' and square_dist_range:
         output_path_png = os.path.join(output_folder, f"histogram_{metric}.png")
         output_path_svg = os.path.join(output_folder, f"histogram_{metric}.svg")
     else:
