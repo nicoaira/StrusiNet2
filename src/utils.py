@@ -248,10 +248,10 @@ def log_setup(log_path):
     log_information(log_path, log_info, "Run Info", 'w')
 
     system_info = get_system_info()
-    log_information(log_path, system_info, "System Info")
+    log_information(log_path, system_info, "System Info", print_log = True)
 
 
-def log_information(log_path, info_dict, log_name = None, open_type='a'):
+def log_information(log_path, info_dict, log_name = None, open_type='a', print_log = False):
     """
     Logs detailed information to a specified log file.
 
@@ -273,8 +273,17 @@ def log_information(log_path, info_dict, log_name = None, open_type='a'):
         the log file.
     """
     with open(log_path, open_type) as f:
-        f.write("\n" + "="*50 + "\n")
+        sep = "\n" + "="*50 + "\n"
+        f.write(sep)
+        if print_log:
+            print(sep)
         if log_name:
-            f.write(f"{log_name}\n")
+            log_name = f"{log_name}\n"
+            f.write(log_name)
+            if print_log:
+                print(log_name)
         for key, value in info_dict.items():
-            f.write(f"{key}: {value}\n")
+            to_log = f"{key}: {value}\n"
+            f.write(to_log)
+            if print_log:
+                print(to_log)
