@@ -4,7 +4,11 @@ import json
 from datetime import datetime
 import uuid
 import os
+import logging
 from data_generation_utils import parallel_structure_generation, plot_triplets, split_dataset
+
+DEBUG_MODE = False
+
 
 def generate_metadata(args):
     """Generate metadata dictionary with all parameters and run info"""
@@ -20,6 +24,7 @@ def generate_metadata(args):
     }
     
     return metadata
+
 
 def save_with_metadata(df, metadata, results_dir):
     """Save CSV with metadata header and separate metadata file"""
@@ -37,7 +42,10 @@ def save_with_metadata(df, metadata, results_dir):
         f.write(header_comment)
         df.to_csv(f, index=False)
 
+
 def main():
+    global DEBUG_MODE
+
     parser = argparse.ArgumentParser(description='RNA Structure Generator')
     
     # Sequence generation parameters
@@ -94,10 +102,8 @@ def main():
 
     # Add visualization parameters
     vis_group = parser.add_argument_group('Visualization')
-    vis_group.add_argument('--plot_structures', action='store_true', default=False,
-                          help='Generate structure plots')
-    vis_group.add_argument('--num_plots', type=int, default=5,
-                          help='Number of structure triplets to plot')
+    vis_group.add_argument('--plot_structures', action='store_true', default=False, help='Generate structure plots')
+    vis_group.add_argument('--num_plots', type=int, default=5, help='Number of structure triplets to plot')
 
     # Add dataset splitting parameters
     split_group = parser.add_argument_group('Dataset Splitting')
@@ -105,8 +111,16 @@ def main():
     split_group.add_argument('--train_fraction', type=float, default=0.8, help='Fraction of data for training')
     split_group.add_argument('--val_fraction', type=float, default=0.2, help='Fraction of data for validation')
     
+    # Add debug flag
+    parser.add_argument('--debug', action='store_true', default=False, help='Enable debug mode')
+
     args = parser.parse_args()
     
+    DEBUG_MODE = args.debug
+
+    if DEBUG_MODE:
+        logging.basicConfig(filename='debug.log', level=logging.DEBUG, format='%(asctime)s %(message)s')
+
     # Handle train/val fraction calculations
     if args.split:
         if args.train_fraction is None and args.val_fraction is None:
@@ -208,6 +222,7 @@ def main():
             plot_triplets(df, plots_dir, num_samples=args.num_plots)
 
     print(f"Results saved in {args.results_dir}")
+
 
 if __name__ == "__main__":
     main()
