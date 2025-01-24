@@ -89,7 +89,7 @@ This script is used to run the benchmark on the prepared datasets. It performs t
 
 ### Example Usage
 ```
-python benchmark.py --model_type siamese --model-path path/to/model --benchmark-metadata benchmark_datasets.json --datasets-dir data/benchmark_datasets --results-path ./benchmarking_results
+src/benchmark/benchmark.py --embeddings-script predict_embedding.py - -model_type gin --model-path output/gin_3_20250123_213324/gin_3_20250123_213324.pth --gin_layers 3 --graph_encoding s tandard --hidden_dim 256 --output_dim 128 --results-path output/gin_3_20250123_213324/embeddings2 --num_workers 16 --device cuda --only-needed-embeddings --distance-batch-size 10000
 ```
 
 ## Directory Structure
