@@ -8,7 +8,7 @@ from tqdm import tqdm
 import argparse
 from src.model.gin_model import GINModel
 from src.model.siamese_model import SiameseResNetLSTM
-from src.utils import dotbracket_to_forgi_graph, forgi_graph_to_tensor, log_information, log_setup, pad_and_convert_to_contact_matrix, dotbracket_to_graph, graph_to_tensor
+from src.utils import dotbracket_to_forgi_graph, forgi_graph_to_tensor, log_information, log_setup, pad_and_convert_to_contact_matrix, dotbracket_to_graph, graph_to_tensor, generate_slices
 import os
 import subprocess
 from pathlib import Path
@@ -78,9 +78,12 @@ def get_siamese_embedding(model, structure, max_len, device='cpu'):
 # Function to get embedding from graph
 
 
-def get_gin_embedding(model, graph_encoding, structure, device):
+def get_gin_embedding(model, graph_encoding, structure, device, L=None, keep_paired_neighbors=False):
+    # Convert to graph
     if graph_encoding == "standard":
         graph = dotbracket_to_graph(structure)
+        # Ensure nodes are 0-indexed and sorted
+        nodes = sorted(graph.nodes())
         tg = graph_to_tensor(graph)
     elif graph_encoding == "forgi":
         graph = dotbracket_to_forgi_graph(structure)
@@ -88,10 +91,47 @@ def get_gin_embedding(model, graph_encoding, structure, device):
 
     tg.to(device)
     model.eval()
+    
     with torch.no_grad():
-        embedding = model.forward_once(tg)
-    return ','.join(f'{x:.6f}' for x in embedding.cpu().numpy().flatten())
-
+        # Get node embeddings from trained model
+        node_embs = model.get_node_embeddings(tg)
+        
+        # Handle subgraph case
+        if L is not None:
+            # Get sorted nodes from the original graph
+            sorted_nodes = sorted(graph.nodes())
+            n = len(sorted_nodes)
+            
+            if n < L:
+                return [(-1, "")]
+            
+            embeddings = []
+            slices = generate_slices(graph, L, keep_paired_neighbors)
+            
+            for start_idx, subgraph_H in slices:
+                # Map subgraph nodes to their positions in the sorted list
+                subgraph_nodes = sorted(subgraph_H.nodes())
+                node_indices = [sorted_nodes.index(node) for node in subgraph_nodes]
+                
+                if not node_indices:
+                    continue
+                
+                # Get embeddings using tensor indices
+                sub_embs = node_embs[node_indices]
+                
+                # Pool and project
+                batch = torch.zeros(len(sub_embs), dtype=torch.long, device=device)
+                pooled = model.pooling(sub_embs, batch)
+                sub_embedding = model.fc(pooled)
+                
+                embedding_str = ','.join(f'{x:.6f}' for x in sub_embedding.cpu().numpy().flatten())
+                embeddings.append((start_idx, embedding_str))
+            
+            return embeddings if embeddings else [(-1, "")]
+        
+        # Handle whole graph case
+        whole_graph_embedding = model.forward_once(tg)
+        return [(None, ','.join(f'{x:.6f}' for x in whole_graph_embedding.cpu().numpy().flatten()))]
 
 # Function to validate dot-bracket structure
 def validate_structure(structure):
@@ -104,18 +144,25 @@ def validate_structure(structure):
 
 # Function to generate embeddings for a single row
 def generate_embedding_for_row(args):
-    idx, row, model, model_type, structure_column, max_len, device, graph_encoding = args
+    idx, row, model, model_type, structure_column, max_len, device, graph_encoding, L, keep_paired_neighbors = args
     
     structure = row[structure_column]
     validate_structure(structure)
+    
     if model_type == "siamese":
         embedding = get_siamese_embedding(model, structure, max_len, device=device)
+        return [(idx, None, embedding)]
+    
     elif "gin" in model_type:
-        embedding = get_gin_embedding(model, graph_encoding, structure, device)
-    return idx, embedding
+        embeddings = get_gin_embedding(
+            model, graph_encoding, structure, device, 
+            L=L, keep_paired_neighbors=keep_paired_neighbors
+        )
+        return [(idx, start, emb) for (start, emb) in embeddings]
+    
+    return []
 
 # Main function to generate embeddings from CSV or TSV
-
 
 def generate_embeddings(
         input_df,
@@ -130,40 +177,73 @@ def generate_embeddings(
         gin_layers=1,
         hidden_dim=256,
         output_dim=128,
+        subgraphs=False,
+        L=None,
+        keep_paired_neighbors=False,
         num_workers=4
 ):
-    # Load the trained model once
+    # Validate subgraph parameters
+    if subgraphs:
+        if L is None:
+            raise ValueError("Window length (L) must be specified when generating subgraphs")
+        if L < 1:
+            raise ValueError("Window length (L) must be a positive integer")
+
+    # Reset index to ensure positional access works correctly
+    input_df = input_df.reset_index(drop=True)
+
+    # Load the trained model
     model = load_trained_model(
         model_path,
         model_type,
         graph_encoding,
         device=device,
-        gin_layers= gin_layers,
+        gin_layers=gin_layers,
         hidden_dim=hidden_dim,
         output_dim=output_dim
     )
 
-    # Initialize list for storing embeddings
-    embeddings = [None] * len(input_df)
-
     # Prepare arguments for multiprocessing
-    args_list = [(idx, row, model, model_type, structure_column, max_len, device, graph_encoding) for idx, row in input_df.iterrows()]
+    args_list = [
+        (idx, row, model, model_type, structure_column, max_len, device, 
+         graph_encoding, L if subgraphs else None, keep_paired_neighbors)
+        for idx, row in input_df.iterrows()
+    ]
 
-    # Use multiprocessing to generate embeddings
+    # Process embeddings
+    results = []
     with Pool(num_workers) as pool:
-        for idx, embedding in tqdm(pool.imap_unordered(generate_embedding_for_row, args_list), total=len(input_df), desc="Processing Embeddings"):
-            embeddings[idx] = embedding
+        for result in tqdm(pool.imap_unordered(generate_embedding_for_row, args_list),
+                          total=len(input_df),
+                          desc="Processing Embeddings"):
+            results.extend(result)
 
-    # Add the embeddings to the DataFrame
-    input_df['embedding_vector'] = embeddings
+    # Create new DataFrame with expanded subgraph embeddings
+    new_rows = []
+    for original_idx, window_start, embedding in results:
+        if original_idx >= len(input_df):
+            raise ValueError(f"Invalid original index {original_idx} in results")
+            
+        original_row = input_df.iloc[original_idx].to_dict()
+        original_row.update({
+            'window_start': window_start if window_start is not None else -1,
+            'embedding_vector': embedding
+        })
+        new_rows.append(original_row)
+
+    output_df = pd.DataFrame(new_rows)
 
     # Save the output TSV
-    input_df.to_csv(output_path, sep='\t', index=False)
+    output_df.to_csv(output_path, sep='\t', index=False)
     print(f"Embeddings saved to {output_path}")
-    save_log = {
-        "Embeddings saved path": output_path
-    }
-    log_information(log_path, save_log)
+    
+    log_information(log_path, {
+        "Embeddings saved path": output_path,
+        "Total embeddings generated": len(output_df),
+        "Subgraph mode": subgraphs,
+        "Window length": L if subgraphs else "N/A",
+        "Keep paired neighbors": keep_paired_neighbors if subgraphs else "N/A"
+    })
 
 def read_input_data(input, samples, structure_column_num, header):
     delimiter = '\t' if input.endswith('.tsv') else ','
@@ -230,6 +310,12 @@ if __name__ == "__main__":
                         help='Specify whether the input CSV file has a header (default: True). Use "True" or "False".')
     parser.add_argument('--hidden_dim', type=int, default=256, help='Hidden dimension size for the model.')
     parser.add_argument('--output_dim', type=int, default=128, help='Output embedding size for the GIN model (ignored for siamese).')
+    parser.add_argument('--subgraphs', action='store_true', 
+                    help='Generate subgraph embeddings instead of whole graph embeddings.')
+    parser.add_argument('--L', type=int, 
+                        help='Window length for subgraph generation. Required if --subgraphs is set.')
+    parser.add_argument('--keep_paired_neighbors', action='store_true', 
+                        help='Include paired neighbors in subgraphs. Requires --subgraphs.')
     parser.add_argument('--device', type=str, default="cuda" if torch.cuda.is_available() else "cpu",
                         help='Device to run the model on (default: "cuda" if available, otherwise "cpu").')
     parser.add_argument('--num_workers', type=int, default=4, help='Number of worker processes to use for multiprocessing (default: 4).')
@@ -291,6 +377,9 @@ if __name__ == "__main__":
         gin_layers=args.gin_layers,
         hidden_dim=args.hidden_dim,
         output_dim=args.output_dim,
+        subgraphs=args.subgraphs,
+        L=args.L,
+        keep_paired_neighbors=args.keep_paired_neighbors,
         num_workers=args.num_workers
     )
 
