@@ -6,9 +6,14 @@ import argparse
 import os
 from multiprocessing import Pool, cpu_count
 
-def sample_rows(input_path, n=1000):
+def sample_rows(input_path, n=None, f=None):
     df = pd.read_csv(input_path, sep='\t')
-    sampled_df = df.sample(n=n, random_state=42).reset_index(drop=True)
+    if n is not None:
+        sampled_df = df.sample(n=n, random_state=42).reset_index(drop=True)
+    elif f is not None:
+        sampled_df = df.sample(frac=f, random_state=42).reset_index(drop=True)
+    else:
+        raise ValueError("Either 'n' or 'f' must be provided.")
     return sampled_df
 
 def calculate_distance_batch(args):
@@ -47,21 +52,19 @@ def generate_pairs(sampled_df, distances):
     for i, j, distance in distances:
         row_i = sampled_df.iloc[i]
         row_j = sampled_df.iloc[j]
-        pair = {
-            'id_1': row_i['rnacentral_id'],
-            'id_2': row_j['rnacentral_id'],
-            'distance': distance,
-            'structure_1': row_i['secondary_structure'],
-            'structure_2': row_j['secondary_structure'],
-            'sequence_1': row_i['sequence'],
-            'sequence_2': row_j['sequence']
-        }
+        pair = {'distance': distance}
+        for col in sampled_df.columns:
+            pair[f'{col}_1'] = row_i[col]
+            pair[f'{col}_2'] = row_j[col]
         pairs.append(pair)
     return pd.DataFrame(pairs)
 
-def main(input_path, n, metric, num_workers, batch_size):
+def main(input_path, n, f, metric, num_workers, batch_size):
+    if n is not None and f is not None:
+        raise ValueError("Both 'n' and 'f' cannot be provided at the same time.")
+    
     # Sample rows
-    sampled_df = sample_rows(input_path, n)
+    sampled_df = sample_rows(input_path, n, f)
 
     # Extract embedding vectors
     embeddings = sampled_df['embedding_vector'].apply(lambda x: np.array([float(i) for i in x.split(',')])).tolist()
@@ -80,10 +83,11 @@ def main(input_path, n, metric, num_workers, batch_size):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Sample rows from a TSV file, generate pairwise combinations, and calculate distances or similarities between embedding vectors.")
     parser.add_argument('--input', type=str, required=True, help='Path to the input TSV file.')
-    parser.add_argument('--n', type=int, default=1000, help='Number of rows to sample (default: 1000).')
+    parser.add_argument('--n', type=int, help='Number of rows to sample.')
+    parser.add_argument('--f', type=float, help='Fraction of rows to sample.')
     parser.add_argument('--metric', type=str, choices=['squared', 'cosine'], default='squared', help='Distance metric to use (default: squared).')
     parser.add_argument('--num_workers', type=int, default=cpu_count(), help='Number of worker processes to use for multiprocessing (default: number of CPU cores).')
     parser.add_argument('--batch_size', type=int, default=1000, help='Batch size for distance calculations (default: 1000).')
     args = parser.parse_args()
 
-    main(args.input, args.n, args.metric, args.num_workers, args.batch_size)
+    main(args.input, args.n, args.f, args.metric, args.num_workers, args.batch_size)
