@@ -140,14 +140,29 @@ def dotbracket_to_graph(dotbracket):
     return G
 
 
-def graph_to_tensor(g):
-    x = torch.Tensor([[0] if g.nodes[node]['label'] == 'unpaired' else [1] for node in g.nodes])
-    edge_index = torch.LongTensor(list(g.edges())).t().contiguous()
-
-    # Graph to Data object
-    data = Data(x=x, edge_index=edge_index)
-
-    return data
+def graph_to_tensor(G):
+    # Get nodes in sorted order to maintain index consistency
+    nodes = sorted(G.nodes())
+    node_features = []
+    for node in nodes:  # Now processing nodes in 0-based order
+        label = G.nodes[node]['label']
+        features = [1.0] if label == 'paired' else [0.0]
+        node_features.append(features)
+    
+    x = torch.tensor(node_features, dtype=torch.float)
+    
+    edge_indices = []
+    edge_attrs = []
+    for u, v, data in G.edges(data=True):
+        edge_indices.append([u, v])
+        edge_type = data['edge_type']
+        attr = [1.0, 0.0] if edge_type == 'adjacent' else [0.0, 1.0]
+        edge_attrs.append(attr)
+    
+    edge_index = torch.tensor(edge_indices, dtype=torch.long).t().contiguous()
+    edge_attr = torch.tensor(edge_attrs, dtype=torch.float)
+    
+    return Data(x=x, edge_index=edge_index, edge_attr=edge_attr)
 
 def dotbracket_to_forgi_graph(dotbracket):
     bulge_graph = fgb.BulgeGraph.from_dotbracket(dotbracket)
@@ -288,3 +303,34 @@ def log_information(log_path, info_dict, log_name = None, open_type='a', print_l
             f.write(to_log)
             if print_log:
                 print(to_log)
+
+def generate_slices(G, L, keep_paired_neighbors=True):
+    slices = []
+    nodes = sorted(G.nodes())
+    n = len(nodes)
+    
+    for start in range(n - L + 1):
+        window_nodes = list(range(start, start + L))
+        external_nodes = set()
+        
+        if keep_paired_neighbors:
+            for node in window_nodes:
+                for neighbor in G.neighbors(node):
+                    if G.edges[node, neighbor].get('edge_type') == 'base_pair' and neighbor not in window_nodes:
+                        external_nodes.add(neighbor)
+        
+        subgraph_nodes = set(window_nodes).union(external_nodes)
+        H = G.subgraph(subgraph_nodes).copy()
+        
+        if keep_paired_neighbors:
+            for external_node in external_nodes:
+                edges_to_remove = []
+                for neighbor in H.neighbors(external_node):
+                    if H.edges[external_node, neighbor].get('edge_type') == 'adjacent':
+                        edges_to_remove.append((external_node, neighbor))
+                for u, v in edges_to_remove:
+                    H.remove_edge(u, v)
+        
+        slices.append((start, H))
+    
+    return slices
